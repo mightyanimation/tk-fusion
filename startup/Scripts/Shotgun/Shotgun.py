@@ -30,32 +30,34 @@ class Window(QtGui.QWidget):
     """Simple Test"""
     
     def __init__(self):
+        self.pyside2_bool = int(QtCore.__version__.split('.')[0]) > 4
         super(Window, self).__init__()
         self.setGeometry(50, 50, 300, 300)
-        self.setWindowTitle("Shotgun: Manu Pannel")
+        self.setWindowTitle("Shotgun: Menu Pannel")
         self.mainlayout()
+
+    def new_activate(self, pysideAction, targetFunction, *args):
+        """ Wrapper between pyside and pyside2 to connect QActions """
+        tmp_func = lambda: targetFunction(args) if len(args) else targetFunction()
+        action = pysideAction.triggered if self.pyside2_bool else pysideAction.activated
+        action.connect(tmp_func)
         
     def mainlayout(self):
         #######################################
-        self.jump_to_sg = QtGui.QAction(self)
-        self.jump_to_sg.setText("Jump to Shotgun")
-        self.jump_to_sg.activated.connect(lambda: self._jump_to_sg())
+        self.jump_to_sg = QtGui.QAction("Jump to Shotgun", self)
+        self.new_activate(self.jump_to_sg, self._jump_to_sg)
 
-        self.jump_to_fs = QtGui.QAction(self)
-        self.jump_to_fs.setText("Jump to File System")
-        self.jump_to_fs.activated.connect(lambda: self._jump_to_fs())
+        self.jump_to_fs = QtGui.QAction("Jump to File System", self)
+        self.new_activate(self.jump_to_fs, self._jump_to_fs)
 
-        self.jump_to_rv = QtGui.QAction(self)
-        self.jump_to_rv.setText("Jump to Screening Room in RV")
-        self.jump_to_rv.activated.connect(lambda: self.callMenu('Jump to Screening Room in RV'))
+        self.jump_to_rv = QtGui.QAction("Jump to Screening Room in RV", self)
+        self.new_activate(self.jump_to_rv, self.callMenu, 'Jump to Screening Room in RV')
 
-        self.jump_to_wp = QtGui.QAction(self)
-        self.jump_to_wp.setText("Jump to Screening Room Web Player")
-        self.jump_to_wp.activated.connect(lambda: self.callMenu('Jump to Screening Room Web Player'))
+        self.jump_to_wp = QtGui.QAction("Jump to Screening Room Web Player", self)
+        self.new_activate(self.jump_to_wp, self.callMenu, 'Jump to Screening Room Web Player')
 
-        self.work_aria_info = QtGui.QAction(self)
-        self.work_aria_info.setText("Work Area Info...")
-        self.work_aria_info.activated.connect(lambda: self.callMenu('Work Area Info...'))
+        self.work_aria_info = QtGui.QAction("Work Area Info...", self)
+        self.new_activate(self.work_aria_info, self.callMenu, 'Work Area Info...')
 
         self.context_menu = QtGui.QMenu(self)
         self.context_menu.addAction(self.jump_to_sg)
@@ -90,13 +92,11 @@ class Window(QtGui.QWidget):
 
 
         #######################################
-        self.snapshot_menu_history = QtGui.QAction(self)
-        self.snapshot_menu_history.setText("Snapshot History...")
-        self.snapshot_menu_history.activated.connect(lambda: self.callMenu('Snapshot History...'))
+        self.snapshot_menu_history = QtGui.QAction("Snapshot History...", self)
+        self.new_activate(self.snapshot_menu_history, self.callMenu, 'Snapshot History...')
 
-        self.snapshot_menu_snapshot = QtGui.QAction(self)
-        self.snapshot_menu_snapshot.setText("Snapshot...")
-        self.snapshot_menu_snapshot.activated.connect(lambda: self.callMenu('Snapshot...'))        
+        self.snapshot_menu_snapshot = QtGui.QAction("Snapshot...", self)
+        self.new_activate(self.snapshot_menu_snapshot, self.callMenu, 'Snapshot...')
 
         self.snapshot_menu = QtGui.QMenu(self)
         self.snapshot_menu.addAction(self.snapshot_menu_history)
@@ -111,13 +111,11 @@ class Window(QtGui.QWidget):
         self.pannel.clicked.connect(lambda: self.callMenu('Shotgun Panel...'))
 
         #######################################
-        self.shotgun_workfiles_menu_open = QtGui.QAction(self)
-        self.shotgun_workfiles_menu_open.setText("File Open...")
-        self.shotgun_workfiles_menu_open.activated.connect(lambda: self.callMenu('File Open...'))
+        self.shotgun_workfiles_menu_open = QtGui.QAction("File Open...", self)
+        self.new_activate(self.shotgun_workfiles_menu_open, self.callMenu, 'File Open...')
 
-        self.shotgun_workfiles_menu_save = QtGui.QAction(self)
-        self.shotgun_workfiles_menu_save.setText("File Save...")
-        self.shotgun_workfiles_menu_save.activated.connect(lambda: self.callMenu('File Save...'))
+        self.shotgun_workfiles_menu_save = QtGui.QAction("File Save...", self)
+        self.new_activate(self.shotgun_workfiles_menu_save, self.callMenu, 'File Save...')
 
         self.shotgun_workfiles_menu = QtGui.QMenu(self)
         self.shotgun_workfiles_menu.addAction(self.shotgun_workfiles_menu_open)
@@ -131,21 +129,17 @@ class Window(QtGui.QWidget):
         self.syncFr.clicked.connect(lambda: self.callMenu('Sync Frame Range with Shotgun'))
 
         #######################################
-        self.sg_saver_dpx_out = QtGui.QAction(self)
-        self.sg_saver_dpx_out.setText("Dpx Output")
-        self.sg_saver_dpx_out.activated.connect(lambda: self.__create_sg_saver('dpx'))
+        self.sg_saver_dpx_out = QtGui.QAction("Dpx Output", self)
+        self.new_activate(self.sg_saver_dpx_out, self.__create_sg_saver, 'dpx')
 
-        self.sg_saver_exr16_out = QtGui.QAction(self)
-        self.sg_saver_exr16_out.setText("Exr, 16 bit Output")
-        self.sg_saver_exr16_out.activated.connect(lambda: self.__create_sg_saver('exr'))
+        self.sg_saver_exr16_out = QtGui.QAction("Exr, 16 bit Output", self)
+        self.new_activate(self.sg_saver_exr16_out, self.__create_sg_saver, 'exr')
 
-        self.sg_saver_pngProxy_out = QtGui.QAction(self)
-        self.sg_saver_pngProxy_out.setText("Png, Proxy with Alpha")
-        self.sg_saver_pngProxy_out.activated.connect(lambda: self.__create_sg_saver('png'))
+        self.sg_saver_pngProxy_out = QtGui.QAction("Png, Proxy with Alpha", self)
+        self.new_activate(self.sg_saver_pngProxy_out, self.__create_sg_saver, 'png')
 
-        self.sg_saver_review_out = QtGui.QAction(self)
-        self.sg_saver_review_out.setText("Shotgun Quick Review")
-        self.sg_saver_review_out.activated.connect(lambda: self.__create_sg_saver('mov'))
+        self.sg_saver_review_out = QtGui.QAction("Shotgun Quick Review", self)
+        self.new_activate(self.sg_saver_review_out, self.__create_sg_saver, 'mov')
 
         self.shotgun_output_menu = QtGui.QMenu(self)
         self.shotgun_output_menu.addAction(self.sg_saver_dpx_out)
