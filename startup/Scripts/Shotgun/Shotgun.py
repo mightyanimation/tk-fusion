@@ -3,13 +3,17 @@ import re
 import sys
 import sgtk
 import BlackmagicFusion as bmd
+import traceback
+import logging
 
 fusion = bmd.scriptapp("Fusion")
 comp = fusion.GetCurrentComp()
 
 logger = sgtk.LogManager.get_logger(__name__)
 
+
 logger.debug("Launching toolkit in classic mode.")
+
 env_engine = os.environ.get("SGTK_ENGINE")
 env_context = os.environ.get("SGTK_CONTEXT")
 context = sgtk.context.deserialize(env_context)
@@ -22,6 +26,8 @@ except:
     pass
 
 engine = sgtk.platform.start_engine(env_engine, context.sgtk, context)
+logging.basicConfig(level=logging.WARNING)
+engine.logger.setLevel(logging.WARNING)
 
 from sgtk.platform.qt import QtGui, QtCore
 
@@ -33,8 +39,10 @@ class Window(QtGui.QWidget):
         self.pyside2_bool = int(QtCore.__version__.split('.')[0]) > 4
         super(Window, self).__init__()
         self.setGeometry(50, 50, 300, 300)
-        self.setWindowTitle("Shotgun: Menu Pannel")
+        self.setFixedSize(200,440)
+        self.setWindowTitle("Shotgun: Menu Panel")
         self.mainlayout()
+        self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
 
     def new_activate(self, pysideAction, targetFunction, *args):
         """ Wrapper between pyside and pyside2 to connect QActions """
@@ -60,18 +68,14 @@ class Window(QtGui.QWidget):
         self.new_activate(self.work_aria_info, self.callMenu, 'Work Area Info...')
 
         self.context_menu = QtGui.QMenu(self)
-        self.context_menu.addAction(self.jump_to_sg)
-        self.context_menu.addAction(self.jump_to_fs)
+        map(self.context_menu.addAction, [self.jump_to_sg, self.jump_to_fs])
         self.context_menu.addSeparator()
-        self.context_menu.addAction(self.jump_to_rv)
-        self.context_menu.addAction(self.jump_to_wp)
-        self.context_menu.addAction(self.work_aria_info)
-
+        map(self.context_menu.addAction, [self.jump_to_rv, self.jump_to_wp, self.work_aria_info])
         self.context_button = QtGui.QPushButton(str(engine.context))
         self.context_button.setStyleSheet("background-color: #4A586E")
         self.context_button.setMenu(self.context_menu)
-        #######################################
 
+        #######################################
         self.open = QtGui.QPushButton("File Open...")
         self.open.clicked.connect(lambda: self.callMenu('File Open...'))
 
@@ -90,7 +94,6 @@ class Window(QtGui.QWidget):
         self.breakdown = QtGui.QPushButton("Scene Breakdown...")
         self.breakdown.clicked.connect(lambda: self.callMenu('Scene Breakdown...'))
 
-
         #######################################
         self.snapshot_menu_history = QtGui.QAction("Snapshot History...", self)
         self.new_activate(self.snapshot_menu_history, self.callMenu, 'Snapshot History...')
@@ -104,9 +107,8 @@ class Window(QtGui.QWidget):
 
         self.snapshot_button = QtGui.QPushButton("Scene Snapshot")
         self.snapshot_button.setMenu(self.snapshot_menu)
+
         #######################################
-
-
         self.pannel = QtGui.QPushButton("Shotgun Panel...")
         self.pannel.clicked.connect(lambda: self.callMenu('Shotgun Panel...'))
 
@@ -123,8 +125,8 @@ class Window(QtGui.QWidget):
 
         self.shotgun_workfiles = QtGui.QPushButton("Shotgun Workfiles") 
         self.shotgun_workfiles.setMenu(self.shotgun_workfiles_menu)
-        #######################################
 
+        #######################################
         self.syncFr = QtGui.QPushButton("Sync Frame Range with Shotgun")
         self.syncFr.clicked.connect(lambda: self.callMenu('Sync Frame Range with Shotgun'))
 
@@ -142,10 +144,9 @@ class Window(QtGui.QWidget):
         self.new_activate(self.sg_saver_review_out, self.__create_sg_saver, 'mov')
 
         self.shotgun_output_menu = QtGui.QMenu(self)
-        self.shotgun_output_menu.addAction(self.sg_saver_dpx_out)
-        self.shotgun_output_menu.addAction(self.sg_saver_exr16_out)
-        self.shotgun_output_menu.addAction(self.sg_saver_pngProxy_out)
-        self.shotgun_output_menu.addAction(self.sg_saver_review_out)
+        map(self.shotgun_output_menu.addAction,
+            [self.sg_saver_dpx_out, self.sg_saver_exr16_out,
+             self.sg_saver_pngProxy_out, self.sg_saver_review_out])
 
         self.sg_saver = QtGui.QPushButton("Create Output Node")
         self.sg_saver.setMenu(self.shotgun_output_menu)
@@ -154,45 +155,30 @@ class Window(QtGui.QWidget):
         self.sg_saver_update = QtGui.QPushButton("Update Output Nodes")
         self.sg_saver_update.clicked.connect(lambda: self.__update_sg_saver())
         self.sg_saver_update.setStyleSheet("background-color: #4A586E")
+
         #######################################
-
         qvbox = QtGui.QVBoxLayout()
-
         qvbox.addWidget(self.context_button)
 
         self.line_context = QtGui.QFrame()
         self.line_context.setFrameShape(QtGui.QFrame.HLine)
-        self.line_context.setFrameShadow(QtGui.QFrame.Sunken)        
-        qvbox.addWidget(self.line_context)
-
-        qvbox.addWidget(self.open)
-        qvbox.addWidget(self.snapshot)
-        qvbox.addWidget(self.save)
-        qvbox.addWidget(self.publish)
+        self.line_context.setFrameShadow(QtGui.QFrame.Sunken)
+        map(qvbox.addWidget,
+            [self.line_context, self.open, self.snapshot,
+             self.save, self.publish])
 
         self.line_open = QtGui.QFrame()
         self.line_open.setFrameShape(QtGui.QFrame.HLine)
         self.line_open.setFrameShadow(QtGui.QFrame.Sunken)
-        qvbox.addWidget(self.line_open)
-
-        qvbox.addWidget(self.load)
-        qvbox.addWidget(self.breakdown)
-        
-        qvbox.addWidget(self.snapshot_button)
-        
-        qvbox.addWidget(self.pannel)
-
-        qvbox.addWidget(self.shotgun_workfiles)
-
-        qvbox.addWidget(self.syncFr)
+        map(qvbox.addWidget,
+            [self.line_open, self.load, self.breakdown, self.snapshot_button,
+             self.pannel, self.shotgun_workfiles, self.syncFr])
 
         self.line_tools = QtGui.QFrame()
         self.line_tools.setFrameShape(QtGui.QFrame.HLine)
-        self.line_tools.setFrameShadow(QtGui.QFrame.Sunken)        
-        qvbox.addWidget(self.line_tools)
-
-        qvbox.addWidget(self.sg_saver)
-        qvbox.addWidget(self.sg_saver_update)
+        self.line_tools.setFrameShadow(QtGui.QFrame.Sunken)
+        map(qvbox.addWidget,
+            [self.line_tools, self.sg_saver, self.sg_saver_update])
         
         # qvbox.insertStretch(2)
         self.setLayout(qvbox)
@@ -201,9 +187,12 @@ class Window(QtGui.QWidget):
         self.show()
     
     def callMenu(self, name):
+        if isinstance(name, tuple):
+            name = name[0]
         for item in engine.commands.items():
-            if name in item[0]:
+            if name in item[0] or name == item[0]:
                 item[1].get('callback').__call__()
+                break
         
         if name in ["File Open...", "File Save..."]:
             self.context_button.setText(str(engine.context))

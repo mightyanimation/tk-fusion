@@ -10,6 +10,8 @@
 import os
 import sgtk
 from sgtk.platform.qt import QtGui
+import imp
+import logging
 
 import BlackmagicFusion as bmd
 fusion = bmd.scriptapp("Fusion")
@@ -65,6 +67,9 @@ class SceneOperation(HookClass):
         """
         app = self.parent
 
+        logging.basicConfig(level=logging.WARNING)
+        app.logger.setLevel(logging.WARNING)
+
         app.log_debug("-"*50)
         app.log_debug('operation: %s' % operation)
         app.log_debug('file_path: %s' % file_path)
@@ -74,6 +79,12 @@ class SceneOperation(HookClass):
         app.log_debug('read_only: %s' % read_only)
 
         comp = fusion.GetCurrentComp()
+
+        if comp is None:
+            print "updating"
+            for key, c in fusion.GetCompList().items():
+                comp = c.Composition()
+                break
 
         comp.Lock()
         if operation == "current_path":
@@ -87,7 +98,64 @@ class SceneOperation(HookClass):
         elif operation == "save_as":
             comp.Save(file_path)
         elif operation == "reset":
-            if comp:
-                comp.Close()
-            fusion.NewComp()
+            return self.reset(comp)
             return True
+
+    def reset(self, comp):
+        #if comp:
+        #    comp.Close()
+        #fusion.NewComp()
+        #comp = fusion._NewComp()
+        self.fusion_setupScene(comp)
+        return True
+
+
+    def fusion_setupScene(self, comp):
+        """ All operations to start working in fusion """
+        print 30 * "*"
+        print "Initializing "
+        
+        FIRST_FRAME = 1001
+        LAST_FRAME = 1100
+        FRAME_WIDTH = 1920
+        FRAME_HEIGHT = 1080
+        FPS = 25
+
+        comp.SetAttrs({
+            'COMPN_RenderStartTime': FIRST_FRAME, 
+            'COMPN_GlobalStart': FIRST_FRAME,
+            'COMPN_RenderStart': FIRST_FRAME,
+
+            'COMPN_CurrentTime': FIRST_FRAME,
+
+            'COMPN_RenderEndTime': LAST_FRAME,
+            'COMPN_RenderEnd': LAST_FRAME,
+            'COMPN_GlobalEnd': LAST_FRAME,
+            })
+
+        comp.SetPrefs({
+            "Comp.FrameFormat.Name": "Test HDTV 1080",
+            "Comp.FrameFormat.Width": FRAME_WIDTH,
+            "Comp.FrameFormat.Height": FRAME_HEIGHT,
+            "Comp.FrameFormat.AspectX": 1.0,
+            "Comp.FrameFormat.AspectY": 1.0,
+            "Comp.FrameFormat.GuideRatio": 1.77777777777778,
+            "Comp.FrameFormat.Rate": FPS,
+            "Comp.FrameFormat.DepthInteractive": 2,    #16 bits Float
+            "Comp.FrameFormat.DepthFull": 2,          #16 bits Float
+            "Comp.FrameFormat.DepthPreview": 2        #16 bits Float
+            })
+
+        """
+        msg = QtGui.QMessageBox()
+        msg.setIcon(QtGui.QMessageBox.Information)
+        msg.setText(
+            "Setup complete.\nRange: {0}-{1}\nResolution {2}x{3}\nFPS{4}".format(
+                FIRST_FRAME, LAST_FRAME, FRAME_WIDTH, FRAME_HEIGHT, FPS))
+        msg.setInformativeText("This is additional information")
+        msg.setWindowTitle("MessageBox demo")
+        msg.show()
+        """
+        #proj:SetSetting('timelineResolutionWidth', "2000")
+        print 30 * "*"
+        print 15 * "-*"
