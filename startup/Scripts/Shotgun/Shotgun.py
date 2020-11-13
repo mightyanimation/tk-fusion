@@ -5,6 +5,7 @@ import sgtk
 import BlackmagicFusion as bmd
 import traceback
 import logging
+from collections import OrderedDict
 
 fusion = bmd.scriptapp("Fusion")
 comp = fusion.GetCurrentComp()
@@ -38,17 +39,129 @@ class Window(QtGui.QWidget):
     def __init__(self):
         self.pyside2_bool = int(QtCore.__version__.split('.')[0]) > 4
         super(Window, self).__init__()
-        self.setGeometry(50, 50, 300, 300)
-        self.setFixedSize(200,440)
+        self.setGeometry(50, 50, 200, 100)
+        #self.setFixedSize(220,440)
+        self.setMaximumWidth(215)
         self.setWindowTitle("Shotgun: Menu Panel")
-        self.mainlayout()
+        #self.mainlayout()
+
+        #Global layout
+        self.qvboxLayout = QtGui.QVBoxLayout()
+        self.setLayout(self.qvboxLayout)
+
+        # Global context menu
+        self.context_button = QtGui.QPushButton(str(engine.context))
+        self.context_button.setStyleSheet("background-color: #4A586E")
+        self.context_menu = QtGui.QMenu(self)
+        self.context_button.setMenu(self.context_menu)
+        self.qvboxLayout.addWidget(self.context_button)
+        line_01 = QtGui.QFrame()
+        line_01.setFrameShape(QtGui.QFrame.HLine)
+        line_01.setFrameShadow(QtGui.QFrame.Sunken)
+        self.qvboxLayout.addWidget(line_01)
+
+        # Populating menu
+        self.populateLayout()
+
+        # Menu always on top
         self.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+
 
     def new_activate(self, pysideAction, targetFunction, *args):
         """ Wrapper between pyside and pyside2 to connect QActions """
         tmp_func = lambda: targetFunction(args) if len(args) else targetFunction()
         action = pysideAction.triggered if self.pyside2_bool else pysideAction.activated
         action.connect(tmp_func)
+
+    def populateLayout(self):
+        context_options = OrderedDict()
+        context_options["Jump to Shotgun"] = self._jump_to_sg
+        context_options["Jump to File System"] = self._jump_to_fs
+        context_options["Ensure Tasks Folders"] = None
+        context_options["Separator 01"] = None
+
+        context_options['Jump to Screening Room in RV'] = None
+        context_options['Jump to Screening Room Web Player'] = None
+        context_options['Work Area Info...'] = None
+        context_options["Separator 02"] = None
+
+        context_options["Reload and Restart"] = None
+        context_options["Open Log Folder"] = None
+        context_options["Toggle Debug Logging"] = None
+
+
+        
+        for cmd_name, cmd_data in engine.commands.items():
+            # Check if the option has icon
+            properties = cmd_data['properties']
+            icon_str = icon_path = description = None
+            if 'icon' in properties.keys(): icon_str = 'icon'
+            if 'icons' in properties.keys(): icon_str = 'icons'
+            if 'description' in properties.keys():
+                description = properties['description']
+
+            if icon_str:
+                icon_data = properties[icon_str]
+                if isinstance(icon_data, str): icon_path=icon_data
+                else:
+                    i_key = icon_data.keys()[0]
+                    icon_path = icon_data[i_key]['png']
+
+                icon_path = icon_path.replace('__init__.pyc', '')
+
+            # If the command should be in the context menu
+            if cmd_name in context_options.keys():
+                context_options[cmd_name] = {'function':cmd_data['callback'],
+                                             'icon': icon_path,
+                                             'description': description}
+                # End skip to the next iteration
+                continue
+
+            # Create the button for the main menu
+            tmp_button = QtGui.QPushButton('  {}'.format(cmd_name))
+            tmp_button.clicked.connect(cmd_data['callback'])
+
+            # If the button has icon
+            if icon_path: tmp_button.setIcon(QtGui.QIcon(icon_path))
+
+            # If the button has description
+            if description: tmp_button.setToolTip(description)
+
+
+            self.qvboxLayout.addWidget(tmp_button)
+
+        for ctx_menu_name, ctx_menu_func in context_options.items():
+            #Creating button
+            tmp_menu_btn = QtGui.QAction(ctx_menu_name, self)
+
+            # Case 01
+            # Separators
+            if 'Separator' in ctx_menu_name:
+                self.context_menu.addSeparator()
+                self.context_menu.addSeparator()
+                continue
+
+            # Case 02
+            # If we only have a function to handle
+            if not isinstance(ctx_menu_func, dict):
+                self.new_activate(tmp_menu_btn, ctx_menu_func)
+                self.context_menu.addAction(tmp_menu_btn)
+                continue
+            
+            # Case 03
+            # Extra info
+            print ctx_menu_name, ctx_menu_func
+            tmp_func = ctx_menu_func['function']
+            tmp_icon = ctx_menu_func['icon']
+            tmp_desc = ctx_menu_func['description']
+
+            # updating action
+            self.new_activate(tmp_menu_btn, tmp_func)
+            if tmp_icon: tmp_menu_btn.setIcon(QtGui.QIcon(tmp_icon))
+            if 'setToolTip' in dir(tmp_menu_btn):
+                if tmp_desc: tmp_menu_btn.setToolTip(tmp_desc)
+            self.context_menu.addAction(tmp_menu_btn)
+
         
     def mainlayout(self):
         #######################################
