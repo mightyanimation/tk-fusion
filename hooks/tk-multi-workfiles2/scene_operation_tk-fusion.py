@@ -9,13 +9,15 @@
 # ------------------------------------------------------------------------------
 import os
 import sgtk
+import sys
 from sgtk.platform.qt import QtGui
 import imp
 import logging
 
+#sys.path.append("C:\\Program Files\\Blackmagic Design\\Fusion 16\\fusionscript.dll")
+
 import BlackmagicFusion as bmd
 fusion = bmd.scriptapp("Fusion")
-
 
 __author__ = "Diego Garcia Huerta"
 __email__ = "diegogh2000@gmail.com"
@@ -67,9 +69,6 @@ class SceneOperation(HookClass):
         """
         app = self.parent
 
-        logging.basicConfig(level=logging.WARNING)
-        app.logger.setLevel(logging.WARNING)
-
         app.log_debug("-"*50)
         app.log_debug('operation: %s' % operation)
         app.log_debug('file_path: %s' % file_path)
@@ -78,13 +77,12 @@ class SceneOperation(HookClass):
         app.log_debug('file_version: %s' % file_version)
         app.log_debug('read_only: %s' % read_only)
 
+        fusion = bmd.scriptapp("Fusion")
         comp = fusion.GetCurrentComp()
 
-        if comp is None:
-            print "updating"
-            for key, c in fusion.GetCompList().items():
-                comp = c.Composition()
-                break
+        print 24 * '*'
+        print fusion.GetAttrs()['FUSIONS_FileName']
+        print 24 * '*'
 
         comp.Lock()
         if operation == "current_path":
@@ -92,27 +90,27 @@ class SceneOperation(HookClass):
         elif operation == "open":
             if comp:
                 comp.Close()
-            fusion.LoadComp(file_path)
+            comp = fusion.LoadComp(file_path)
         elif operation == "save":
             comp.Save(file_path)
         elif operation == "save_as":
             comp.Save(file_path)
         elif operation == "reset":
-            return self.reset(comp)
-            return True
+            print 'new context >>>', context
+            return self.reset(comp, context)
 
-    def reset(self, comp):
-        #if comp:
-        #    comp.Close()
-        #fusion.NewComp()
+    def reset(self, comp, context):
+        if comp:
+            comp.Close()
+        fusion.NewComp()
+        comp = fusion.GetCurrentComp()
         #comp = fusion._NewComp()
         self.fusion_setupScene(comp)
         return True
 
 
-    def fusion_setupScene(self, comp):
+    def fusion_setupScene(self, comp, context):
         """ All operations to start working in fusion """
-        print 30 * "*"
         print "Initializing "
         
         FIRST_FRAME = 1001
@@ -157,5 +155,4 @@ class SceneOperation(HookClass):
         msg.show()
         """
         #proj:SetSetting('timelineResolutionWidth', "2000")
-        print 30 * "*"
-        print 15 * "-*"
+
