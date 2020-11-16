@@ -105,7 +105,7 @@ class SceneOperation(HookClass):
         fusion.NewComp()
         comp = fusion.GetCurrentComp()
         #comp = fusion._NewComp()
-        self.fusion_setupScene(comp)
+        self.fusion_setupScene(comp, context)
         return True
 
 
