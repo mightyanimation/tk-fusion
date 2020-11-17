@@ -5,6 +5,8 @@ import sgtk
 import BlackmagicFusion as bmd
 import traceback
 import logging
+import subprocess
+import time
 from collections import OrderedDict
 
 fusion = bmd.scriptapp("Fusion")
@@ -35,6 +37,9 @@ class Window(QtGui.QWidget):
     """Simple Test"""
     
     def __init__(self):
+        # Verify fusion
+        self.verify_fusion()
+        
         self.pyside2_bool = int(QtCore.__version__.split('.')[0]) > 4
         super(Window, self).__init__()
         self.setGeometry(50, 50, 200, 100)
@@ -374,6 +379,48 @@ class Window(QtGui.QWidget):
         else:
             QtGui.QMessageBox.information(self, "Shotgun Saver Updater",
                 "No one node have been updated!")
+
+    def verify_fusion(self):
+        fusion = bmd.scriptapp("Fusion")
+        comp = fusion.GetCurrentComp()
+
+        fusion_exe = fusion.GetAttrs()['FUSIONS_FileName']
+
+        print 24 * '*'
+        print fusion_exe
+        print 24 * '*'
+        if fusion_exe.endswith("FusionRenderNode.exe"):
+            subprocess_ = subprocess.Popen(['tasklist'], stdout=subprocess.PIPE)
+            output, error = subprocess_.communicate()
+            #print output
+            target_process = "FusionRenderNode"
+            pid = None
+            for line in output.splitlines():
+                if 'FusionRenderNode' in str(line):
+                    sub_line = str(line).split(' ')
+                    for sub_ in sub_line:
+                        if sub_.isdigit():
+                            pid = int(sub_)
+                            break
+                    break
+            
+            if pid is not None:
+                #Closing process
+                os.kill(pid, 9)
+
+                logger.debug(' ...Closing FusionRenderNode...')
+                print ' ...Closing FusionRenderNode...'
+                time.sleep(1)
+                
+                # Reload fusion
+                fusion = bmd.scriptapp("Fusion")
+
+                # Reload comp
+                comp = fusion.GetCurrentComp()
+
+                fusion_exe = fusion.GetAttrs()['FUSIONS_FileName']
+                print '>>>>>>>', fusion_exe
+            
 
 app = QtGui.QApplication.instance()
 
