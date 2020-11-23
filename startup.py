@@ -144,6 +144,7 @@ class FusionLauncher(SoftwareLauncher):
         Find executables in the default install locations.
         """
 
+
         # all the executable templates for the current OS
         executable_templates = self.EXECUTABLE_TEMPLATES.get(sys.platform, [])
 

@@ -13,6 +13,8 @@ import sys
 from sgtk.platform.qt import QtGui
 import imp
 import logging
+import traceback
+
 
 #sys.path.append("C:\\Program Files\\Blackmagic Design\\Fusion 16\\fusionscript.dll")
 
@@ -80,10 +82,6 @@ class SceneOperation(HookClass):
         fusion = bmd.scriptapp("Fusion")
         comp = fusion.GetCurrentComp()
 
-        print 24 * '*'
-        print fusion.GetAttrs()['FUSIONS_FileName']
-        print 24 * '*'
-
         comp.Lock()
         if operation == "current_path":
             return comp.GetAttrs()['COMPS_FileName']
@@ -91,6 +89,7 @@ class SceneOperation(HookClass):
             if comp:
                 comp.Close()
             comp = fusion.LoadComp(file_path)
+            comp.Unlock()
         elif operation == "save":
             comp.Save(file_path)
         elif operation == "save_as":
@@ -98,6 +97,9 @@ class SceneOperation(HookClass):
         elif operation == "reset":
             print 'new context >>>', context
             return self.reset(comp, context)
+        comp.Unlock()
+
+
 
     def reset(self, comp, context):
         if comp:
@@ -106,6 +108,7 @@ class SceneOperation(HookClass):
         comp = fusion.GetCurrentComp()
         #comp = fusion._NewComp()
         self.fusion_setupScene(comp, context)
+        comp.Unlock()
         return True
 
 
@@ -118,6 +121,9 @@ class SceneOperation(HookClass):
         FRAME_WIDTH = 1920
         FRAME_HEIGHT = 1080
         FPS = 25
+
+        # TODO setup OCIO config project and active comp
+        # TODO check current context first and last frame
 
         comp.SetAttrs({
             'COMPN_RenderStartTime': FIRST_FRAME, 
@@ -143,16 +149,4 @@ class SceneOperation(HookClass):
             "Comp.FrameFormat.DepthFull": 2,          #16 bits Float
             "Comp.FrameFormat.DepthPreview": 2        #16 bits Float
             })
-
-        """
-        msg = QtGui.QMessageBox()
-        msg.setIcon(QtGui.QMessageBox.Information)
-        msg.setText(
-            "Setup complete.\nRange: {0}-{1}\nResolution {2}x{3}\nFPS{4}".format(
-                FIRST_FRAME, LAST_FRAME, FRAME_WIDTH, FRAME_HEIGHT, FPS))
-        msg.setInformativeText("This is additional information")
-        msg.setWindowTitle("MessageBox demo")
-        msg.show()
-        """
-        #proj:SetSetting('timelineResolutionWidth', "2000")
 

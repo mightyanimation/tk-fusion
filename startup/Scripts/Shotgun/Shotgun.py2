@@ -1,0 +1,37 @@
+import os
+import re
+import sys
+import sgtk
+import BlackmagicFusion as bmd
+import traceback
+import logging
+import subprocess
+import time
+
+
+fusion = bmd.scriptapp("Fusion")
+comp = fusion.GetCurrentComp()
+
+logger = sgtk.LogManager.get_logger(__name__)
+logger.debug("Launching toolkit in classic mode.")
+
+env_engine = os.environ.get("SGTK_ENGINE")
+env_context = os.environ.get("SGTK_CONTEXT")
+context = sgtk.context.deserialize(env_context)
+
+try:
+    path = comp.GetAttrs()['COMPS_FileName']
+    tk = sgtk.sgtk_from_path(path)
+    context = tk.context_from_path(path)
+except:
+    pass
+
+print 'Initializing engine'
+engine = sgtk.platform.start_engine(env_engine, context.sgtk, context)
+
+from sgtk.platform.qt import QtGui, QtCore
+app = QtGui.QApplication.instance()
+#wid = Window()
+#wid.run()
+#engine.menu_generator.display_menu()
+engine._qt_app.exec_()

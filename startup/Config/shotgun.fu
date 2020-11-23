@@ -7,7 +7,7 @@
     {
       Sub 'Shotgun'
       {
-        'RunScript  { Name = "Shotgun", id = "Overlay", filename = [[ Scripts:Shotgun/Shotgun.py ]] }'
+        'RunScript  { Name = "Shotgun", id = "Overlay", filename = [[ Scripts:Shotgun/Shotgun.py2 ]] }'
       },
     },
   },

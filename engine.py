@@ -314,6 +314,7 @@ class FusionEngine(Engine):
         if self.get_setting("use_sgtk_as_menu_name", False):
             self._menu_name = "Sgtk"
 
+
     def create_shotgun_menu(self, disabled=False):
         """
         Creates the main shotgun menu in fusion.
@@ -323,14 +324,20 @@ class FusionEngine(Engine):
 
         # only create the shotgun menu if not in batch mode and menu doesn't
         # already exist
+        print "create_shotgun_menu ----------"
         if self.has_ui:
+            print "   UI -----------"
             # create our menu handler
             tk_fusion = self.import_module("tk_fusion")
-        #     self._menu_generator = tk_fusion.MenuGenerator(
-        #         self, self._menu_name)
-        #     self._menu_generator.create_menu(disabled=disabled)
-            return True
+            print tk_fusion.__file__
+            #self.menu_generator = tk_fusion.MenuGenerator(
+            #    self, self._menu_name)
+            #self.menu_generator.create_menu(disabled=disabled)
+            self.menu_generator = tk_fusion.Community_Menu(self)
+            self.menu_generator.create_menu()
+            self.menu_generator.display_menu()
 
+            return True
         return False
 
     def _initialise_qapplication(self):
@@ -382,19 +389,22 @@ class FusionEngine(Engine):
         self.__register_open_log_folder_command()
         self.__register_reload_command()
 
-        # if self.get_setting("automatic_context_switch", True):
-        #     fusion.shotgun._engine_instance = self.instance_name
-        #     fusion.shotgun._menu_name = self._menu_name
-        #     fusion.shotgun._new_context = new_context
+        if self.get_setting("automatic_context_switch", True):
+            fusion.shotgun._engine_instance = self.instance_name
+            fusion.shotgun._menu_name = self._menu_name
+            fusion.shotgun._new_context = new_context
 
-        #     self.logger.debug(
-        #         "Registered new open and save callbacks before "
-        #         "changing context."
-        #     )
+            self.logger.debug(
+                "Registered new open and save callbacks before "
+                "changing context."
+            )
 
-        #     # finally create the menu with the new context if needed
-        #     if old_context != new_context:
-        #         self.create_shotgun_menu()
+            # finally create the menu with the new context if needed
+            if old_context != new_context:
+                self.create_shotgun_menu()
+
+        if old_context != new_context:
+            self.menu_generator.limpiando_menu()
 
     def _run_app_instance_commands(self):
         """
