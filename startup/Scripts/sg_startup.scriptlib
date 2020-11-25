@@ -1,0 +1,11 @@
+-- if composition ~= nil then
+--    fusion:RunScript("Scripts:Shotgun/Shotgun.py")
+-- end
+fusion:RunScript("Scripts:Shotgun/Shotgun.py")
+-- Execute("!Py: fusion.GetCurrentComp().Lock()")
+-- while composition == nil do
+-- wait around until fusion is running
+-- this is to avoid error pop-up: attempt to call global 'Execute' (a nil value)"
+-- end
+-- Execute("!Py: print 'hola'")
+

@@ -326,10 +326,8 @@ class FusionEngine(Engine):
         # already exist
         print "create_shotgun_menu ----------"
         if self.has_ui:
-            print "   UI -----------"
             # create our menu handler
             tk_fusion = self.import_module("tk_fusion")
-            print tk_fusion.__file__
             #self.menu_generator = tk_fusion.MenuGenerator(
             #    self, self._menu_name)
             #self.menu_generator.create_menu(disabled=disabled)
@@ -390,9 +388,11 @@ class FusionEngine(Engine):
         self.__register_reload_command()
 
         if self.get_setting("automatic_context_switch", True):
-            fusion.shotgun._engine_instance = self.instance_name
-            fusion.shotgun._menu_name = self._menu_name
-            fusion.shotgun._new_context = new_context
+            # TODO check how to add instance in fusion 
+            if 'shotgun' in dir(fusion):
+                fusion.shotgun._engine_instance = self.instance_name
+                fusion.shotgun._menu_name = self._menu_name
+                fusion.shotgun._new_context = new_context
 
             self.logger.debug(
                 "Registered new open and save callbacks before "
@@ -402,9 +402,6 @@ class FusionEngine(Engine):
             # finally create the menu with the new context if needed
             if old_context != new_context:
                 self.create_shotgun_menu()
-
-        if old_context != new_context:
-            self.menu_generator.limpiando_menu()
 
     def _run_app_instance_commands(self):
         """

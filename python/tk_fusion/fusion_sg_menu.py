@@ -19,24 +19,49 @@ class Floating_Window(QtGui.QWidget):
         
         self.pyside2_bool = int(QtCore.__version__.split('.')[0]) > 4
         super(Floating_Window, self).__init__()
-        self.setGeometry(50, 50, 200, 100)
-        self.setMaximumWidth(225)
+        #self.setGeometry(50, 50, 260, 100)
+        self.setMinimumWidth(250)
         self.setWindowTitle("Shotgun: Menu Panel")
 
         #Global layout
-        self.qvboxLayout = QtGui.QVBoxLayout()
-        self.setLayout(self.qvboxLayout)
+        qvboxLayoutGlobal = QtGui.QVBoxLayout()
+        qvboxLayoutGlobal.setContentsMargins(0, 0, 0, 6)
+        qvboxLayoutGlobal.setSizeConstraint(QtGui.QLayout.SetFixedSize)
+        self.setLayout(qvboxLayoutGlobal)
 
         # Global context menu
         self.context_button = QtGui.QPushButton(str(self.engine.context))
         self.context_button.setStyleSheet("background-color: #4A586E")
+        self.context_button.setMinimumSize(QtCore.QSize(210, 20))
         self.context_menu = QtGui.QMenu(self)
         self.context_button.setMenu(self.context_menu)
-        self.qvboxLayout.addWidget(self.context_button)
+
+        frame_01 = QtGui.QFrame(self)
+        frame_01.setFrameShape(QtGui.QFrame.NoFrame)
+        frame_01_qhboxLayout = QtGui.QHBoxLayout()
+        frame_01_qhboxLayout.setContentsMargins(6, 6, 6, 0)
+        frame_01.setLayout(frame_01_qhboxLayout)
+        frame_01_qhboxLayout.addWidget(self.context_button)
+
+        self.show_btn = QtGui.QPushButton('<')
+        self.show_btn.setMaximumSize(QtCore.QSize(20, 20))
+        self.show_btn.clicked.connect(self.show_options)
+        frame_01_qhboxLayout.addWidget(self.show_btn)
+
+        self.frame_02 = QtGui.QFrame(self)
+        self.frame_02.setFrameShape(QtGui.QFrame.NoFrame)
+        self.qvboxLayout = QtGui.QVBoxLayout()
+        self.qvboxLayout.setContentsMargins(6, 0, 6, 0)
+        self.frame_02.setLayout(self.qvboxLayout)
+        
+        #self.qvboxLayout.addWidget(frame_01)
         line_01 = QtGui.QFrame()
         line_01.setFrameShape(QtGui.QFrame.HLine)
         line_01.setFrameShadow(QtGui.QFrame.Sunken)
-        self.qvboxLayout.addWidget(line_01)
+
+        qvboxLayoutGlobal.addWidget(frame_01)
+        qvboxLayoutGlobal.addWidget(line_01)
+        qvboxLayoutGlobal.addWidget(self.frame_02)
 
         self.func_index = 0
         self.func_relations = {}
@@ -78,6 +103,21 @@ class Floating_Window(QtGui.QWidget):
 
         return icon_path, description
 
+    def show_options(self):
+        """
+        Show/hide engine app buttons
+
+        Parameters:
+            None
+        Returns:
+            None
+        """
+        # Change text
+        if self.show_btn.text() == '>': self.show_btn.setText('<')
+        else: self.show_btn.setText('>')
+
+        # Change visibility
+        self.frame_02.setVisible(not self.frame_02.isVisible())
 
     def connect_to_engine(self):
         triggered_element = self.sender().objectName()
