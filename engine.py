@@ -328,12 +328,9 @@ class FusionEngine(Engine):
         if self.has_ui:
             # create our menu handler
             tk_fusion = self.import_module("tk_fusion")
-            #self.menu_generator = tk_fusion.MenuGenerator(
-            #    self, self._menu_name)
-            #self.menu_generator.create_menu(disabled=disabled)
-            self.menu_generator = tk_fusion.Community_Menu(self)
-            self.menu_generator.create_menu()
-            self.menu_generator.display_menu()
+            
+            self.menu_generator = tk_fusion.ShotgunMenu(self)
+            self.menu_generator.show()
 
             return True
         return False

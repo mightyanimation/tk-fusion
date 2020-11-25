@@ -8,5 +8,4 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
-from .menu_generation import MenuGenerator
-from .fusion_sg_menu import Floating_Window, Community_Menu
+from .menu_generation import ShotgunMenu
