@@ -13,6 +13,11 @@ lockfile = os.path.join(os.environ["APPDATA"],
                         "FusionEngine",
                         "Lock")
 container = os.path.dirname(lockfile)
+mighty_folder = os.path.dirname(container)
+
+# Creating Mighty folder in roaming
+if not os.path.exists(mighty_folder):
+    os.mkdir(mighty_folder)
 
 # Check if folder exists
 if not os.path.exists(container):
