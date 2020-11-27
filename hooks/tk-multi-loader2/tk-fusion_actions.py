@@ -89,6 +89,14 @@ class FusionActions(HookBaseClass):
                                                      "node to the current "
                                                      "scene.")})
 
+        if "ensure_local" in actions:
+            action_instances.append({"name": "ensure_local",
+                                     "params": None,
+                                     "caption": "Download",
+                                     "description": ("This will add a read "
+                                                     "node to the current "
+                                                     "scene.")})
+
         return action_instances
 
     def execute_multiple_actions(self, actions):
@@ -151,7 +159,11 @@ class FusionActions(HookBaseClass):
         path = self.get_publish_path(sg_publish_data).replace(os.path.sep, "/")
 
         if name == "read_node":
+            self._ensure_file_is_local(path, sg_publish_data)
             self._create_read_node(path, sg_publish_data)
+
+        if name == "ensure_local":
+            self._ensure_file_is_local(path, sg_publish_data)
 
     # helper methods which can be subclassed in custom hooks to fine tune the
     # behaviour of things
@@ -207,6 +219,37 @@ class FusionActions(HookBaseClass):
         comp.Unlock()
 
 
+    def _ensure_file_is_local(self, path, published_file):
+        """
+        Given a PublishedFile entity dictionary and a path
+        It will attempt to download the file if it is not already downloaded.
+        :param path:
+        :param published_file:
+        :return:
+        """
+
+        if not hasattr(self, 'metasync'):
+            self.metasync = \
+                self.load_framework("mty-framework-metasync")
+
+        transfersManager = self.metasync.transfersManager
+        if "%" in path:
+            dirname = os.path.dirname(path)
+            if os.path.exists(dirname) and \
+                    self._collect_sequenced_files(path):
+                transfersManager \
+                    .ensure_local_dependencies(published_file)
+                return path
+        else:
+            if os.path.exists(path):
+                transfersManager \
+                    .ensure_local_dependencies(published_file)
+                return path
+
+        transfersManager.ensure_file_is_local(path, published_file)
+        transfersManager.ensure_local_dependencies(published_file)
+
+        return path
 
 
     def _sequence_range_from_path(self, path):
@@ -305,3 +348,17 @@ class FusionActions(HookBaseClass):
 
         # return the range
         return (min(frames), max(frames))
+
+    def _collect_sequenced_files(self, sequence_path):
+        folder_path = os.path.dirname(sequence_path)
+        name, ext = os.path.splitext(sequence_path)
+        folder_files = os.listdir(folder_path)
+        sequence_files = []
+
+        if len(folder_files) > 0:
+            for file in sorted(folder_files):
+                if file.endswith(ext):
+                    path = os.path.join(folder_path, file)
+                    sequence_files.append(path)
+
+        return sequence_files
