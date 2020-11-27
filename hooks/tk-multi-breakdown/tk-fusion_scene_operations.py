@@ -46,19 +46,24 @@ class BreakdownSceneOperations(Hook):
         date.
         """
 
+        engine = self.parent.engine
+        
         # Introspect the natron scene for read and write nodes
         # so we can gather the filenames available.
-
-
         refs = []
         
         comp = fusion.GetCurrentComp()
+        engine.log_debug("Scene operation: getting current comp")
         comp.Lock()
+        engine.log_debug("Scene operation: lock current comp")
         for tool in comp.GetToolList(False, "Loader").values():
             ref_path = tool.GetAttrs("TOOLST_Clip_Name").values()
             if ref_path:
+                engine.log_debug("Scanning node {}: {}".format(tool.GetAttrs("TOOLS_Name"), ref_path[0]))
                 ref_path[0].replace("/", os.path.sep)
                 refs.append({"node": tool.GetAttrs("TOOLS_Name"), "type": "file", "path": ref_path[0]})
+
+        engine.log_debug("Scene operation: unlock current comp")
         comp.Unlock()
 
         return refs
@@ -84,7 +89,7 @@ class BreakdownSceneOperations(Hook):
 
         for i in items:
             engine.log_debug(
-                    "File Updating to version %s" % i)     
+                    "File Updating to version %s" % i)
  
             node = i["node"]
             node_type = i["type"]

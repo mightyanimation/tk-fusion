@@ -79,14 +79,15 @@ class SceneOperation(HookClass):
         fusion = bmd.scriptapp("Fusion")
         comp = fusion.GetCurrentComp()
 
-        comp.Lock()
         if operation == "current_path":
             return comp.GetAttrs()['COMPS_FileName']
         elif operation == "open":
             if comp:
+                comp.Lock()
                 comp.Close()
             comp = fusion.LoadComp(file_path)
             comp.Unlock()
+            
         elif operation == "save":
             self.update_fusion_saver_nodes(comp, file_path)
             comp.Save(file_path)
@@ -96,31 +97,60 @@ class SceneOperation(HookClass):
         elif operation == "reset":
             print 'new context >>>', context
             return self.reset(comp, context)
-        comp.Unlock()
-
-
+        
 
     def reset(self, comp, context):
         if comp:
+            comp.Lock()
             comp.Close()
         fusion.NewComp()
         comp = fusion.GetCurrentComp()
-        #comp = fusion._NewComp()
+        
         self.fusion_setupScene(comp, context)
-        comp.Unlock()
         return True
 
 
     def fusion_setupScene(self, comp, context):
         """ All operations to start working in fusion """
-        print "Initializing "
+        if comp is None:
+            return
         
+        # Default value
         FIRST_FRAME = 1001
         LAST_FRAME = 1100
         FRAME_WIDTH = 1920
         FRAME_HEIGHT = 1080
         FPS = 25
+        
+        sg = self.parent.engine.shotgun
+        print 'Context'
+        #print type(context)
+        #print dir(context)
+        #print 'Context'
+        print 'EngineContext:', self.parent.engine.context
+        #print dir(self.parent.engine.context)
 
+        context_tokens = str(context).split(' ')
+        if len(context_tokens) == 3:
+            entity_type = context_tokens[1]
+            entity_name = context_tokens[2]
+        
+            if entity_type == 'Shot':
+                sg_proj = self.parent.engine.context.project
+                print sg_proj
+                shot_filter = [['project', 'is', sg_proj],
+                                ['code', 'is', entity_name]]
+                shot_fields = ['sg_cut_in', 'sg_cut_out']
+                sg_shot = sg.find_one('Shot', shot_filter, shot_fields)
+
+                if sg_shot is not None:
+                    if sg_shot['sg_cut_in'] is not None:
+                        FIRST_FRAME = sg_shot['sg_cut_in']
+                    
+                    if sg_shot['sg_cut_out'] is not None:
+                        LAST_FRAME = sg_shot['sg_cut_out']
+
+        
         # TODO setup OCIO config project and active comp
         # TODO check current context first and last frame
 
@@ -148,6 +178,7 @@ class SceneOperation(HookClass):
             "Comp.FrameFormat.DepthFull": 2,          #16 bits Float
             "Comp.FrameFormat.DepthPreview": 2        #16 bits Float
             })
+        comp.Unlock()
 
     def update_fusion_saver_nodes (self, the_comp, file_path):
         try:
