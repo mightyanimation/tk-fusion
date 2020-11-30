@@ -83,9 +83,9 @@ class SceneOperation(HookClass):
             return comp.GetAttrs()['COMPS_FileName']
         elif operation == "open":
             if comp:
-                comp.Lock()
-                comp.Close()
-            comp = fusion.LoadComp(file_path)
+                comp.Lock(); comp.Close(); comp = fusion.LoadComp(file_path)
+            else:
+                comp = fusion.LoadComp(file_path)
             comp.Unlock()
             
         elif operation == "save":
@@ -95,20 +95,18 @@ class SceneOperation(HookClass):
             self.update_fusion_saver_nodes(comp, file_path)
             comp.Save(file_path)
         elif operation == "reset":
-            print 'new context >>>', context
             return self.reset(comp, context)
         
 
     def reset(self, comp, context):
         if comp:
-            comp.Lock()
-            comp.Close()
-        fusion.NewComp()
-        comp = fusion.GetCurrentComp()
+            comp.Lock(); comp.Close(); fusion.NewComp()
+        else:
+            fusion.NewComp()
         
+        comp = fusion.GetCurrentComp()
         self.fusion_setupScene(comp, context)
         return True
-
 
     def fusion_setupScene(self, comp, context):
         """ All operations to start working in fusion """
@@ -123,12 +121,6 @@ class SceneOperation(HookClass):
         FPS = 25
         
         sg = self.parent.engine.shotgun
-        print 'Context'
-        #print type(context)
-        #print dir(context)
-        #print 'Context'
-        print 'EngineContext:', self.parent.engine.context
-        #print dir(self.parent.engine.context)
 
         context_tokens = str(context).split(' ')
         if len(context_tokens) == 3:
@@ -137,7 +129,6 @@ class SceneOperation(HookClass):
         
             if entity_type == 'Shot':
                 sg_proj = self.parent.engine.context.project
-                print sg_proj
                 shot_filter = [['project', 'is', sg_proj],
                                 ['code', 'is', entity_name]]
                 shot_fields = ['sg_cut_in', 'sg_cut_out']
@@ -154,7 +145,7 @@ class SceneOperation(HookClass):
         # TODO setup OCIO config project and active comp
         # TODO check current context first and last frame
 
-        comp.SetAttrs({
+        comp.Lock(); comp.SetAttrs({
             'COMPN_RenderStartTime': FIRST_FRAME, 
             'COMPN_GlobalStart': FIRST_FRAME,
             'COMPN_RenderStart': FIRST_FRAME,
@@ -166,7 +157,7 @@ class SceneOperation(HookClass):
             'COMPN_GlobalEnd': LAST_FRAME,
             })
 
-        comp.SetPrefs({
+        comp.Lock(); comp.SetPrefs({
             "Comp.FrameFormat.Name": "Test HDTV 1080",
             "Comp.FrameFormat.Width": FRAME_WIDTH,
             "Comp.FrameFormat.Height": FRAME_HEIGHT,

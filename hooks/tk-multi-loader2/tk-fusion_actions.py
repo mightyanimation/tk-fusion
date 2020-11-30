@@ -17,6 +17,7 @@ import re
 import glob
 import sgtk
 from sgtk.errors import TankError
+import traceback
 
 
 HookBaseClass = sgtk.get_hook_baseclass()
@@ -157,9 +158,24 @@ class FusionActions(HookBaseClass):
         # unicode so convert the path to ensure filenames containing complex
         # characters are supported
         path = self.get_publish_path(sg_publish_data).replace(os.path.sep, "/")
-
+        localfile_bool = False
         if name == "read_node":
-            self._ensure_file_is_local(path, sg_publish_data)
+            folder_path = os.path.dirname(path)
+            file_name = path.split('/')[-1] if '/' in path else path.split(os.sep())[-1]
+            file_info = file_name.split('.')
+            for f in os.listdir(folder_path):
+                if os.path.isfile(os.path.join(folder_path, f)):
+                    if f == file_name:
+                        localfile_bool = True
+                        break
+
+                    current_info = f.split('.')
+                    if file_info[0] == current_info[0] and file_info[-1] == current_info[-1]:
+                        localfile_bool = True
+                        break
+
+            if not localfile_bool:
+                self._ensure_file_is_local(path, sg_publish_data)
             self._create_read_node(path, sg_publish_data)
 
         if name == "ensure_local":
@@ -208,14 +224,24 @@ class FusionActions(HookBaseClass):
 
         comp.Lock()
         if seq_range:
-            # override the detected frame range.
+            # override the detected frame range.            
             path = path % seq_range[0]
-            loader = comp.Loader({"Clip": path})
-            loader.GlobalIn = seq_range[0]
-            loader.GlobalOut = seq_range[1]
-            loader.ClipTimeStart = 0            
+            trim_out = int(seq_range[1]) - int(seq_range[0])
+            globalStart = comp.GetAttrs("COMPN_GlobalStart")
+            comp.Lock(); loader = comp.Loader({"Clip": path.replace('/', '\\')})
+            node_name = path.split('/')[-1].split(".")[0]
+            load_data = {
+                "TOOLS_Name": node_name,
+                "TOOLB_NameSet": True
+                }
+            loader.SetAttrs(load_data)
+            loader.GlobalIn = globalStart
+            loader.GlobalOut = globalStart + trim_out
+            loader.ClipTimeStart = 0
+            loader.ClipTimeEnd = trim_out
+            loader.TrimOut = trim_out
         else:
-            comp.Loader({"Clip": path})
+            comp.Lock(); comp.Loader({"Clip": path.replace('/', '\\')})
         comp.Unlock()
 
 
@@ -227,6 +253,7 @@ class FusionActions(HookBaseClass):
         :param published_file:
         :return:
         """
+        self._find_sequence_range(path)
 
         if not hasattr(self, 'metasync'):
             self.metasync = \

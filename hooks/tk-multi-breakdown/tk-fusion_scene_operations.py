@@ -45,7 +45,6 @@ class BreakdownSceneOperations(Hook):
         available. Any such versions are then displayed in the UI as out of 
         date.
         """
-
         engine = self.parent.engine
         
         # Introspect the natron scene for read and write nodes
@@ -60,12 +59,21 @@ class BreakdownSceneOperations(Hook):
             ref_path = tool.GetAttrs("TOOLST_Clip_Name").values()
             if ref_path:
                 engine.log_debug("Scanning node {}: {}".format(tool.GetAttrs("TOOLS_Name"), ref_path[0]))
-                ref_path[0].replace("/", os.path.sep)
-                refs.append({"node": tool.GetAttrs("TOOLS_Name"), "type": "file", "path": ref_path[0]})
+                #ref_path[0].replace("/", os.path.sep)
+                print "ref_path", ref_path[0]
+                new_path = ref_path[0].split('.')
+                new_path = "{}.%04d.{}".format(new_path[0], new_path[-1])
+                new_path = new_path.replace('\\', '/')
+                print "new path      ", new_path
+                #refs.append({"node": tool.GetAttrs("TOOLS_Name"), "type": "file", "path": ref_path[0]})
+                refs.append({"node": tool.GetAttrs("TOOLS_Name"), "type": "Rendered Image", "path": new_path})
+                #{"node": node_name, "type": "reference", "path": maya_path}
 
         engine.log_debug("Scene operation: unlock current comp")
         comp.Unlock()
 
+
+        print 'end ref------------------------------'
         return refs
 
     def update(self, items):
@@ -80,6 +88,7 @@ class BreakdownSceneOperations(Hook):
         the that each attribute should be updated *to* rather than the current
         path.
         """
+
         comp = fusion.GetCurrentComp()
         engine = self.parent.engine
 
@@ -90,7 +99,7 @@ class BreakdownSceneOperations(Hook):
         for i in items:
             engine.log_debug(
                     "File Updating to version %s" % i)
- 
+
             node = i["node"]
             node_type = i["type"]
             new_path = i["path"]

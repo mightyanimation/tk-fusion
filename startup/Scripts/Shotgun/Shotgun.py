@@ -47,7 +47,8 @@ if not os.path.exists(lockfile):
 
     logger.debug('Initializing engine')
     engine = sgtk.platform.start_engine(env_engine, context.sgtk, context)
-    os.remove(lockfile)
+    if os.path.exists(lockfile):
+        os.remove(lockfile)
 
     from sgtk.platform.qt import QtGui, QtCore
     engine._qt_app.exec_()
