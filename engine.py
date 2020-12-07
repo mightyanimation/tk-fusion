@@ -324,7 +324,6 @@ class FusionEngine(Engine):
 
         # only create the shotgun menu if not in batch mode and menu doesn't
         # already exist
-        print "create_shotgun_menu ----------"
         if self.has_ui:
             # create our menu handler
             tk_fusion = self.import_module("tk_fusion")

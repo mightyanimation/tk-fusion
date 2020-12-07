@@ -14,6 +14,7 @@ class ShotgunMenu(QtGui.QWidget):
     
     def __init__(self, engine):
         self.engine = engine
+        self.saver_nodes = {}
         # Verify fusion
         self.verify_fusion()
         
@@ -126,7 +127,10 @@ class ShotgunMenu(QtGui.QWidget):
 
     def connect_to_engine(self):
         triggered_element = self.sender().objectName()
-        self.engine.commands[triggered_element]['callback'].__call__()
+        if triggered_element in self.engine.commands.keys():
+            self.engine.commands[triggered_element]['callback'].__call__()
+        elif triggered_element in self.saver_nodes.keys():
+            self.create_saver(triggered_element)
 
     def populateLayout(self):
         """
@@ -199,38 +203,20 @@ class ShotgunMenu(QtGui.QWidget):
         line_02.setFrameShadow(QtGui.QFrame.Sunken)
         self.qvboxLayout.addWidget(line_02)
 
-        #   Ouput options
-        if self.engine.context.entity is not None:
-            sg_saver_dpx_out = QtGui.QAction("Dpx Output", self)
-            sg_saver_dpx_out.triggered.connect(
-                lambda: self.__create_sg_saver('dpx'))
+        savers_menu = QtGui.QMenu(self)
+        sg_saver = QtGui.QPushButton("Create Saver Nodes")
+        sg_saver.setMenu(savers_menu)
+        sg_saver.setStyleSheet("background-color: #810B44")
 
-            sg_saver_exr16_out = QtGui.QAction("Exr, 16 bit Output", self)
-            sg_saver_exr16_out.triggered.connect(
-                lambda: self.__create_sg_saver('exr'))
+        for element in self.engine.get_setting('saver_nodes'):
+            self.saver_nodes[element['name']] = element
+            menu_action = QtGui.QAction(element['name'], self)
+            menu_action.setObjectName(element['name'])
+            menu_action.triggered.connect(self.connect_to_engine)
+            savers_menu.addAction(menu_action)
 
-            sg_saver_pngProxy_out = QtGui.QAction("Png, Proxy with Alpha", self)
-            sg_saver_pngProxy_out.triggered.connect(
-                lambda: self.__create_sg_saver('png'))
-
-            sg_saver_review_out = QtGui.QAction("Shotgun Quick Review", self)
-            sg_saver_review_out.triggered.connect(
-                lambda: self.__create_sg_saver('mov'))
-
-            shotgun_output_menu = QtGui.QMenu(self)
-            map(shotgun_output_menu.addAction,
-                [sg_saver_dpx_out, sg_saver_exr16_out,
-                sg_saver_pngProxy_out, sg_saver_review_out])
-
-            sg_saver = QtGui.QPushButton("Create Output Node")
-            sg_saver.setMenu(shotgun_output_menu)
-            sg_saver.setStyleSheet("background-color: #810B44")
-
-            sg_saver_update = QtGui.QPushButton("Update Output Nodes")
-            sg_saver_update.clicked.connect(lambda: self.__update_sg_saver())
-            sg_saver_update.setStyleSheet("background-color: #4A586E")
-
-            map(self.qvboxLayout.addWidget, [sg_saver, sg_saver_update])
+        if len(self.saver_nodes.keys()):
+            self.qvboxLayout.addWidget(sg_saver)
     
     def _jump_to_sg(self):
         """
@@ -238,6 +224,53 @@ class ShotgunMenu(QtGui.QWidget):
         """
         url = self.engine.context.shotgun_url
         QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
+
+    def create_saver(self, sg_saver_name):
+        fusion = bmd.scriptapp("Fusion")
+        comp = fusion.GetCurrentComp()
+        path = comp.GetAttrs()['COMPS_FileName']
+        sg_saver_info = self.saver_nodes[sg_saver_name]
+
+        work_template = self.engine.sgtk.template_from_path(path)
+        fields = work_template.get_fields(path)
+
+        work_version = work_template.get_fields(path).get('version')
+
+        comp_format = comp.GetPrefs().get('Comp').get('FrameFormat')
+        fields['height'] = int(comp_format.get('Height'))
+        fields['width'] = int(comp_format.get('Width'))
+        try:
+            sg_shot = get_sg_shot_info(['sg_cut_in'])
+            fields['SEQ'] = sg_shot['sg_cut_in']
+        except:
+            fields['SEQ'] = 1001
+
+        render_template_name = sg_saver_info['render_template']
+        render_template = self.engine.sgtk.templates[render_template_name]
+        render_path = render_template.apply_fields(fields)
+
+        comp.Lock(); comp.Lock()
+        saver = comp.Saver({"Clip": render_path})
+        saver_atts = {"TOOLS_Name": "sg_%{}".format(sg_saver_name),
+                      "format_id": sg_saver_info['format_id'],
+                      'format_settings': sg_saver_info['format_settings']}
+        saver.SetAttrs(saver_atts)
+        comp.Unlock(), comp.Unlock()
+    
+    def get_sg_shot_info(self, shot_fields):
+        engine = self.engine
+        sg = engine.shotgun
+        sg_proj = engine.context.project
+
+        context_tokens = str(engine.context).split(' ')
+        entity_name = context_tokens[2]
+        shot_filter = [['project', 'is', sg_proj],
+                       ['code', 'is', entity_name]]
+        # shot_fields = ['sg_cut_in', 'sg_cut_out']
+        sg_shot = sg.find_one('Shot', shot_filter, shot_fields)
+        return sg_shot
+
+
 
     def _jump_to_fs(self):
         """
@@ -265,6 +298,7 @@ class ShotgunMenu(QtGui.QWidget):
                 self.engine.logger.error("Failed to launch '%s'!", cmd)
 
     def __create_sg_saver(self, ext_type):
+        fusion = bmd.scriptapp("Fusion")
         comp = fusion.GetCurrentComp()
         path = comp.GetAttrs()['COMPS_FileName']
 
@@ -282,7 +316,7 @@ class ShotgunMenu(QtGui.QWidget):
         if text and ok:
             fields['output'] = text
 
-        review_template = engine.get_template_by_name("fusion_%s_render_mono_%s" % (task_type.lower(), ext_type))
+        review_template = self.engine.get_template_by_name("fusion_%s_render_mono_%s" % (task_type.lower(), ext_type))
         output = review_template.apply_fields(fields)
         output = re.sub(r'%(\d+)d', '', output)
 
@@ -294,6 +328,7 @@ class ShotgunMenu(QtGui.QWidget):
         comp.Unlock()
 
     def __update_sg_saver(self):
+        fusion = bmd.scriptapp("Fusion")
         comp = fusion.GetCurrentComp()
         path = comp.GetAttrs()['COMPS_FileName']
 

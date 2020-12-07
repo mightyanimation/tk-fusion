@@ -4,6 +4,7 @@ import sys
 import BlackmagicFusion as bmd
 import time
 import random
+import traceback
 
 
 # lock file to avoid run engine creation twice!!
@@ -30,6 +31,10 @@ if not os.path.exists(lockfile):
     
     fusion = bmd.scriptapp("Fusion")
     comp = fusion.GetCurrentComp()
+    if comp is None:
+        reload(bmd)
+        fusion = bmd.scriptapp("Fusion")
+        comp = fusion.GetCurrentComp()
 
     logger = sgtk.LogManager.get_logger(__name__)
     logger.debug("Launching toolkit in classic mode.")
@@ -38,18 +43,25 @@ if not os.path.exists(lockfile):
     env_context = os.environ.get("SGTK_CONTEXT")
     context = sgtk.context.deserialize(env_context)
 
+    #if comp is not None:
     try:
         path = comp.GetAttrs()['COMPS_FileName']
         tk = sgtk.sgtk_from_path(path)
         context = tk.context_from_path(path)
     except:
+        #print traceback.format_exc()
         pass
 
     logger.debug('Initializing engine')
-    engine = sgtk.platform.start_engine(env_engine, context.sgtk, context)
-    if os.path.exists(lockfile):
-        os.remove(lockfile)
+    try:
+        engine = sgtk.platform.start_engine(env_engine, context.sgtk, context)
+        if os.path.exists(lockfile):
+            os.remove(lockfile)
 
-    from sgtk.platform.qt import QtGui, QtCore
-    engine._qt_app.exec_()
+        from sgtk.platform.qt import QtGui, QtCore
+        engine._qt_app.exec_()
+    except:
+        if os.path.exists(lockfile):
+            os.remove(lockfile)
+        print traceback.format_exc()
 

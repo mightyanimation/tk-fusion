@@ -71,8 +71,6 @@ class BreakdownSceneOperations(Hook):
 
         engine.log_debug("Scene operation: unlock current comp")
         comp.Unlock()
-
-
         print 'end ref------------------------------'
         return refs
 

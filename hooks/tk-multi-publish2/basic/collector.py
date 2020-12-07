@@ -79,7 +79,7 @@ class FusionSessionCollector(HookBaseClass):
         # create an item representing the current fusion session
         item = self.collect_current_fusion_session(settings, parent_item)
         
-        self.collect_sg_savernodes(item)
+        #self.collect_sg_savernodes(item)
 
     def collect_current_fusion_session(self, settings, parent_item):
         """
