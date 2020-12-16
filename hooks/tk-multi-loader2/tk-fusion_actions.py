@@ -94,9 +94,16 @@ class FusionActions(HookBaseClass):
             action_instances.append({"name": "ensure_local",
                                      "params": None,
                                      "caption": "Download",
-                                     "description": ("This will add a read "
-                                                     "node to the current "
-                                                     "scene.")})
+                                     "description": ("This will very if the file"
+                                                     "exists, if not then "
+                                                     "it will be downloaded.")})
+
+        if "copy_path" in actions:
+            action_instances.append({"name": "copy_path",
+                                     "params": None,
+                                     "caption": "Copy path",
+                                     "description": ("This will copy the publish "
+                                                     " path into the clipboard.")})
 
         return action_instances
 
@@ -180,6 +187,9 @@ class FusionActions(HookBaseClass):
 
         if name == "ensure_local":
             self._ensure_file_is_local(path, sg_publish_data)
+
+        if name == "copy_path":
+            self._copy_publish_path(path)
 
     # helper methods which can be subclassed in custom hooks to fine tune the
     # behaviour of things
@@ -389,3 +399,15 @@ class FusionActions(HookBaseClass):
                     sequence_files.append(path)
 
         return sequence_files
+
+    def _copy_publish_path(self, path):
+        import os
+        import sys
+        python_modules_path = os.path.join(
+            os.path.dirname(self.disk_location), "external_python_modules")
+        print 30 * '*'
+        print python_modules_path
+        print 30 * '*'
+        sys.path.append(python_modules_path)
+        import pyperclip
+        pyperclip.copy(path)

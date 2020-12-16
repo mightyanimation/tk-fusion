@@ -232,6 +232,13 @@ class ShotgunMenu(QtGui.QWidget):
         sg_saver_info = self.saver_nodes[sg_saver_name]
 
         work_template = self.engine.sgtk.template_from_path(path)
+        if work_template is None:
+            msg_ = 'To create a saver node\nSave your comp first!'
+            msgBox = QtGui.QMessageBox()
+            msgBox.setText(msg_)
+            msgBox.exec_()
+            return
+
         fields = work_template.get_fields(path)
 
         work_version = work_template.get_fields(path).get('version')
@@ -249,13 +256,16 @@ class ShotgunMenu(QtGui.QWidget):
         render_template = self.engine.sgtk.templates[render_template_name]
         render_path = render_template.apply_fields(fields)
 
-        comp.Lock(); comp.Lock()
+        while not comp.GetAttrs()['COMPB_Locked']:
+            comp.Lock()
         saver = comp.Saver({"Clip": render_path})
         saver_atts = {"TOOLS_Name": "sg_%{}".format(sg_saver_name),
                       "format_id": sg_saver_info['format_id'],
                       'format_settings': sg_saver_info['format_settings']}
         saver.SetAttrs(saver_atts)
-        comp.Unlock(), comp.Unlock()
+
+        while comp.GetAttrs()['COMPB_Locked']:
+            comp.Unlock()
     
     def get_sg_shot_info(self, shot_fields):
         engine = self.engine
@@ -320,12 +330,14 @@ class ShotgunMenu(QtGui.QWidget):
         output = review_template.apply_fields(fields)
         output = re.sub(r'%(\d+)d', '', output)
 
-        comp.Lock()
-
+        while not comp.GetAttrs()['COMPB_Locked']:
+            comp.Lock()
         saver = comp.Saver({"Clip": output})
         saver.CreateDir = 0
-        saver.SetAttrs({"TOOLS_Name": "shotgun_%s" % ext_type})
-        comp.Unlock()
+        saver.SetAttrs({"TOOLS_Name": "shotgun_%s" % ext_type})        
+        while comp.GetAttrs()['COMPB_Locked']:
+            comp.Unlock()
+
 
     def __update_sg_saver(self):
         fusion = bmd.scriptapp("Fusion")
@@ -338,7 +350,8 @@ class ShotgunMenu(QtGui.QWidget):
         savers = comp.GetToolList(False, "Saver").values()
 
         saver_names = []
-
+        while not comp.GetAttrs()['COMPB_Locked']:
+            comp.Lock()
         for saver in savers:
             path = saver.GetAttrs()['TOOLST_Clip_Name'].values()[0]
             template = self.engine.sgtk.template_from_path(path)
@@ -349,6 +362,9 @@ class ShotgunMenu(QtGui.QWidget):
                     fields['version'] = work_version
                     saver.Clip = template.apply_fields(fields)
                     saver_names.append("<b>(%s)</b> form: v%03d to: v%03d<br>" % (saver.GetAttrs("TOOLS_Name"), template_version, work_version))
+
+        while comp.GetAttrs()['COMPB_Locked']:
+            comp.Unlock()
         if saver_names:
             QtGui.QMessageBox.information(self, "Shotgun Saver Updater",
                 "%s Saver Nodes: <br><br>%s <br><br>"
