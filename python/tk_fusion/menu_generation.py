@@ -131,6 +131,8 @@ class ShotgunMenu(QtGui.QWidget):
             self.engine.commands[triggered_element]['callback'].__call__()
         elif triggered_element in self.saver_nodes.keys():
             self.create_saver(triggered_element)
+        elif triggered_element == 'Unlock_comp':
+            self.unlock_comp()
 
     def populateLayout(self):
         """
@@ -203,6 +205,12 @@ class ShotgunMenu(QtGui.QWidget):
         line_02.setFrameShadow(QtGui.QFrame.Sunken)
         self.qvboxLayout.addWidget(line_02)
 
+        unlock_comp_btn = QtGui.QPushButton('Unlock comp')
+        unlock_comp_btn.setObjectName('Unlock_comp')
+        unlock_comp_btn.clicked.connect(self.connect_to_engine)
+        unlock_comp_btn.setToolTip('Option to unlock fusion when the viewer is freeze')
+        self.qvboxLayout.addWidget(unlock_comp_btn)
+
         savers_menu = QtGui.QMenu(self)
         sg_saver = QtGui.QPushButton("Create Saver Nodes")
         sg_saver.setMenu(savers_menu)
@@ -252,6 +260,17 @@ class ShotgunMenu(QtGui.QWidget):
         except:
             fields['SEQ'] = 1001
 
+        # Applying aov fields!
+        if 'aov_name' in sg_saver_info.keys():
+            fields['aov_name'] = sg_saver_info['aov_name']
+        else:
+            title, msg = 'Create AOV saver', 'Enter AOV name:'
+            text, resp = QtGui.QInputDialog.getText(self, title, msg)
+            if resp:
+                fields['aov_name'] = text
+            else:
+                return
+
         render_template_name = sg_saver_info['render_template']
         render_template = self.engine.sgtk.templates[render_template_name]
         render_path = render_template.apply_fields(fields)
@@ -266,7 +285,7 @@ class ShotgunMenu(QtGui.QWidget):
 
         while comp.GetAttrs()['COMPB_Locked']:
             comp.Unlock()
-    
+  
     def get_sg_shot_info(self, shot_fields):
         engine = self.engine
         sg = engine.shotgun
@@ -280,6 +299,22 @@ class ShotgunMenu(QtGui.QWidget):
         sg_shot = sg.find_one('Shot', shot_filter, shot_fields)
         return sg_shot
 
+    def unlock_comp(self):
+        fusion = bmd.scriptapp("Fusion")
+        comp = fusion.GetCurrentComp()
+        was_locked_bool = False
+        while comp.GetAttrs()['COMPB_Locked']:
+            was_locked_bool = True
+            comp.Unlock()
+
+        if was_locked_bool:
+            msg_ = 'Unlock complete'
+        else:
+            msg_ = 'Comp was not locked'
+
+        msgBox = QtGui.QMessageBox()
+        msgBox.setText(msg_)
+        msgBox.exec_()
 
 
     def _jump_to_fs(self):
