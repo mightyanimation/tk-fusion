@@ -234,9 +234,9 @@ class ShotgunMenu(QtGui.QWidget):
         QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
 
     def create_saver(self, sg_saver_name):
-        fusion = bmd.scriptapp("Fusion")
-        comp = fusion.GetCurrentComp()
-        path = comp.GetAttrs()['COMPS_FileName']
+        fusion        = bmd.scriptapp("Fusion")
+        comp          = fusion.GetCurrentComp()
+        path          = comp.GetAttrs()['COMPS_FileName']
         sg_saver_info = self.saver_nodes[sg_saver_name]
 
         work_template = self.engine.sgtk.template_from_path(path)
@@ -247,15 +247,13 @@ class ShotgunMenu(QtGui.QWidget):
             msgBox.exec_()
             return
 
-        fields = work_template.get_fields(path)
-
-        work_version = work_template.get_fields(path).get('version')
-
-        comp_format = comp.GetPrefs().get('Comp').get('FrameFormat')
-        fields['height'] = int(comp_format.get('Height'))
-        fields['width'] = int(comp_format.get('Width'))
+        fields            = work_template.get_fields(path)
+        work_version      = work_template.get_fields(path).get('version')
+        comp_format       = comp.GetPrefs().get('Comp').get('FrameFormat')
+        fields['height']  = int(comp_format.get('Height'))
+        fields['width']   = int(comp_format.get('Width'))
         try:
-            sg_shot = get_sg_shot_info(['sg_cut_in'])
+            sg_shot       = get_sg_shot_info(['sg_cut_in'])
             fields['SEQ'] = sg_shot['sg_cut_in']
         except:
             fields['SEQ'] = 1001
@@ -272,12 +270,13 @@ class ShotgunMenu(QtGui.QWidget):
                 return
 
         render_template_name = sg_saver_info['render_template']
-        render_template = self.engine.sgtk.templates[render_template_name]
-        render_path = render_template.apply_fields(fields)
+        render_template      = self.engine.sgtk.templates[render_template_name]
+        render_path          = render_template.apply_fields(fields)
 
         while not comp.GetAttrs()['COMPB_Locked']:
             comp.Lock()
-        saver = comp.Saver({"Clip": render_path})
+
+        saver      = comp.Saver({"Clip": render_path})
         saver_atts = {"TOOLS_Name": "sg_%{}".format(sg_saver_name),
                       "format_id": sg_saver_info['format_id'],
                       'format_settings': sg_saver_info['format_settings']}
@@ -285,6 +284,9 @@ class ShotgunMenu(QtGui.QWidget):
 
         while comp.GetAttrs()['COMPB_Locked']:
             comp.Unlock()
+
+        saver.SetData ("Shotgun_Saver_Node", True)
+        saver.SetData ("Current_template", render_template.name)
   
     def get_sg_shot_info(self, shot_fields):
         engine = self.engine
