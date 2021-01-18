@@ -5,6 +5,7 @@ import BlackmagicFusion as bmd
 import time
 import random
 import traceback
+from datetime import datetime
 
 
 # lock file to avoid run engine creation twice!!
@@ -23,6 +24,22 @@ if not os.path.exists(mighty_folder):
 # Check if folder exists
 if not os.path.exists(container):
     os.mkdir(container)
+
+# Validate old lock files
+if os.path.exists(lockfile):
+    created_time = time.ctime(os.path.getctime(lockfile))
+    created_time2 = datetime.strptime(created_time, "%a %b %d %H:%M:%S %Y")
+    current_time = datetime.now()
+    time_difference = current_time - created_time2
+    dif_seconds = time_difference.total_seconds()
+    # If the lock file is older than 12 seconds,
+    # then we will erase it
+    if dif_seconds > 12:
+        # delete file
+        try:
+            os.remove(lockfile)
+        except:
+            print('Old lock file can not be removed, delete manually\n{}'.format(lockfile))
 
 # Getting time to create the lock file
 time.sleep(random.uniform(0.0, 2.0))
