@@ -627,3 +627,60 @@ class FusionEngine(Engine):
                 traceback.print_exc()
                 self.logger.error("Cannot close dialog %s: %s",
                                   dialog_window_title, exception)
+
+    def __update_nodes_version(self, new_path=None):
+        """
+            Update all the saver nodes in the comp.
+            Only if the path correspond to a template.
+        """
+        comp          = fusion.GetCurrentComp()
+        work_path     = comp.GetAttrs()['COMPS_FileName']
+        if new_path is not None:
+            work_path = new_path
+        work_tmpl     = self.sgtk.template_from_path(work_path)
+        if work_tmpl is None:
+            print("__update_nodes_version: Invalid path")
+            return
+        work_fields   = work_tmpl.get_fields(work_path)
+        list_of_tools = comp.GetToolList(False, "Saver") # Only selected:False
+
+        for index, tool in list_of_tools.iteritems ():
+            clip_path = tool.GetAttrs()['TOOLST_Clip_Name'].values()[0]
+
+            # If saver is empty
+            if clip_path in [None, "", " "]:
+                continue
+
+            sg_saver_bool    = tool.GetData("Shotgun_Saver_Node")
+            fields           = None
+            current_template = None
+            new_render_path  = None
+
+            # Validating metadata
+            if sg_saver_bool:
+                template_name    = tool.GetData ("Current_template")
+                current_template = self.sgtk.templates[template_name]
+            else: # Retro compatibility
+                current_template = self.sgtk.template_from_path(clip_path)
+
+            # Avoid savers out of the pipeline
+            if current_template is None:
+                continue
+
+            fields = current_template.get_fields(clip_path)
+
+            # Checking if the template use a version token
+            if not 'version' in fields.keys():
+                continue
+
+            for tool_field in fields.keys():
+                # Update the fields
+                if tool_field in work_fields.keys():
+                    fields[tool_field]=work_fields[tool_field]
+
+            # Updating path from current saver
+            new_render_path  = current_template.apply_fields(fields)
+            tool.Clip        = new_render_path
+
+        comp.Save(work_path)
+        print('Nodes update complete')
