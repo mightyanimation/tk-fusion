@@ -133,6 +133,16 @@ class ShotgunMenu(QtGui.QWidget):
             self.create_saver(triggered_element)
         elif triggered_element == 'Unlock_comp':
             self.unlock_comp()
+        elif triggered_element == 'Deadline_command':
+            # Load framework
+            acciones = self.engine.load_framework("Engine_Deadline")
+            acciones.enviarGranja()
+
+            # imprimir ayuda print help(self)
+            # imprimir metodos y variables print dir(self)
+            # TODO
+
+            
 
     def populateLayout(self):
         """
@@ -210,6 +220,12 @@ class ShotgunMenu(QtGui.QWidget):
         unlock_comp_btn.clicked.connect(self.connect_to_engine)
         unlock_comp_btn.setToolTip('Option to unlock fusion when the viewer is freeze')
         self.qvboxLayout.addWidget(unlock_comp_btn)
+
+        deadline_comp_btn = QtGui.QPushButton('Send to Deadline')
+        deadline_comp_btn.setObjectName('Deadline_command')
+        deadline_comp_btn.clicked.connect(self.connect_to_engine)
+        deadline_comp_btn.setToolTip('Render all enabled saver nodes in deadline')
+        self.qvboxLayout.addWidget(deadline_comp_btn)
 
         savers_menu = QtGui.QMenu(self)
         sg_saver = QtGui.QPushButton("Create Saver Nodes")
