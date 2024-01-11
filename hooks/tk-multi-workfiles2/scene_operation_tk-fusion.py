@@ -87,7 +87,7 @@ class SceneOperation(HookClass):
             else:
                 comp = fusion.LoadComp(file_path)
             comp.Unlock()
-            
+
         elif operation == "save":
             self.update_fusion_saver_nodes(comp, file_path)
             comp.Save(file_path)
@@ -96,14 +96,14 @@ class SceneOperation(HookClass):
             comp.Save(file_path)
         elif operation == "reset":
             return self.reset(comp, context)
-        
+
 
     def reset(self, comp, context):
         if comp:
             comp.Lock(); comp.Close(); fusion.NewComp()
         else:
             fusion.NewComp()
-        
+
         comp = fusion.GetCurrentComp()
         self.fusion_setupScene(comp, context)
         return True
@@ -112,21 +112,21 @@ class SceneOperation(HookClass):
         """ All operations to start working in fusion """
         if comp is None:
             return
-        
+
         # Default value
         FIRST_FRAME = 1001
         LAST_FRAME = 1100
         FRAME_WIDTH = 1920
         FRAME_HEIGHT = 1080
         FPS = 25
-        
+
         sg = self.parent.engine.shotgun
 
         context_tokens = str(context).split(' ')
         if len(context_tokens) == 3:
             entity_type = context_tokens[1]
             entity_name = context_tokens[2]
-        
+
             if entity_type == 'Shot':
                 sg_proj = self.parent.engine.context.project
                 shot_filter = [['project', 'is', sg_proj],
@@ -137,16 +137,16 @@ class SceneOperation(HookClass):
                 if sg_shot is not None:
                     if sg_shot['sg_cut_in'] is not None:
                         FIRST_FRAME = sg_shot['sg_cut_in']
-                    
+
                     if sg_shot['sg_cut_out'] is not None:
                         LAST_FRAME = sg_shot['sg_cut_out']
 
-        
+
         # TODO setup OCIO config project and active comp
         # TODO check current context first and last frame
 
         comp.Lock(); comp.SetAttrs({
-            'COMPN_RenderStartTime': FIRST_FRAME, 
+            'COMPN_RenderStartTime': FIRST_FRAME,
             'COMPN_GlobalStart': FIRST_FRAME,
             'COMPN_RenderStart': FIRST_FRAME,
 
@@ -176,7 +176,7 @@ class SceneOperation(HookClass):
             only_selected_nodes = False
             list_of_tools = the_comp.GetToolList (only_selected_nodes, "Saver")
             self.parent.log_debug ("List of tools values are: %s" % list_of_tools)
-            for index, tool in list_of_tools.iteritems ():
+            for index, tool in list(list_of_tools.items()):
                 is_saver_node = tool.GetData("Shotgun_Saver_Node")
                 if not is_saver_node:
                     is_saver_node = tool.GetData("Shotgun_Saver_Node_Extra")
@@ -198,15 +198,15 @@ class SceneOperation(HookClass):
 
     def publish_render_saver_nodes (self, item, output, work_template, comment, thumbnail_path, sg_task, primary_task, primary_publish_path, progress_cb):
         # TODO en lugar de escanear imagenes en imagen template
-        # Verificar que solo exiat un saver node existente, 
+        # Verificar que solo exiat un saver node existente,
         #  Verificar que el saver node tenga la metadata (Extradata, sg worktemplate, sg render template)
-        #  
-        # 
+        #
+        #
         # E.g. only_selected_nodes = False
         #    list_of_tools = the_comp.GetToolList (only_selected_nodes, "Saver")
         try:
             self.parent.log_info ("STARTING FUSION SECONDARY PUBLISH RENDER SAVER")
-            progress_cb(05, "Gathering Data") 
+            progress_cb(05, "Gathering Data")
             render_template_name = item['other_params']['render_template_name']
             render_template_path = item['other_params']['render_template_path'].replace("/", "\\\\")
             self.parent.log_debug ("SCANNING renders from: " + render_template_path)
@@ -231,7 +231,7 @@ class SceneOperation(HookClass):
             self.parent.log_debug (str (images_list))
             #playable_file = os.path.dirname(images_path) + os.path.sep + sequence.format("%h%p%t")
             frames_length = sequence.length()
-            progress_cb(15, "Preparing to Copy Files") 
+            progress_cb(15, "Preparing to Copy Files")
             publish_template = output['publish_template']
             fields = work_template.get_fields (item['other_params']['work_file_path'])
             publish_version = fields["version"]
@@ -258,7 +258,7 @@ class SceneOperation(HookClass):
                 shutil.copy (image, destination)
                 current_value += increase_value
             # register the publish:
-            progress_cb(85, "Registering the publish")        
+            progress_cb(85, "Registering the publish")
             args = {
                 "tk": self.parent.tank,
                 "context": self.parent.context,
@@ -272,7 +272,7 @@ class SceneOperation(HookClass):
                 "published_file_type":tank_type
             }
             sg_publishes = tank.util.register_publish(**args)
-            progress_cb(100, "Done") 
+            progress_cb(100, "Done")
         except:
             error = traceback.format_exc()
             self.parent.log_error (error)

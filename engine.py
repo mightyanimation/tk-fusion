@@ -426,7 +426,7 @@ class FusionEngine(Engine):
         # Build a dictionary mapping app instance names to dictionaries of
         # commands they registered with the engine.
         app_instance_commands = {}
-        for (cmd_name, value) in self.commands.iteritems():
+        for (cmd_name, value) in list(self.commands.items()):
             app_instance = value["properties"].get("app")
             if app_instance:
                 # Add entry 'command name: command function' to the command
@@ -455,7 +455,7 @@ class FusionEngine(Engine):
             else:
                 if not setting_cmd_name:
                     # Run all commands of the given app instance.
-                    for (cmd_name, command_function) in cmd_dict.iteritems():
+                    for (cmd_name, command_function) in list(cmd_dict.items()):
                         msg = ("%s startup running app '%s' command '%s'.",
                                self.name, app_instance_name, cmd_name)
                         self.logger.debug(msg)
@@ -501,39 +501,39 @@ class FusionEngine(Engine):
         Handles the pyside init
         """
 
-        # # first see if pyside2 is present
-        # try:
-        #     from PySide2 import QtGui
-        # except:
-        #     # fine, we don't expect PySide2 to be present just yet
-        #     self.logger.debug("PySide2 not detected - trying for PySide now...")
-        # else:
-        #     # looks like pyside2 is already working! No need to do anything
-        #     self.logger.debug(
-        #         "PySide2 detected - the existing version will be used."
-        #     )
-        #     return
+        # first see if pyside2 is present
+        try:
+            from PySide2 import QtGui
+        except:
+            # fine, we don't expect PySide2 to be present just yet
+            self.logger.debug("PySide2 not detected - trying for PySide now...")
+        else:
+            # looks like pyside2 is already working! No need to do anything
+            self.logger.debug(
+                "PySide2 detected - the existing version will be used."
+            )
+            return
 
-        # # then see if pyside is present
-        # try:
-        #     from PySide import QtGui
-        # except:
-        #     # must be that a PySide version is not installed,
-        #     self.logger.debug(
-        #         "PySide not detected - it will be added to the setup now..."
-        #     )
-        # else:
-        #     # looks like pyside is already working! No need to do anything
-        #     self.logger.debug(
-        #         "PySide detected - the existing version will be used."
-        #     )
-        #     # return
+        # then see if pyside is present
+        try:
+            from PySide import QtGui
+        except:
+            # must be that a PySide version is not installed,
+            self.logger.debug(
+                "PySide not detected - it will be added to the setup now..."
+            )
+        else:
+            # looks like pyside is already working! No need to do anything
+            self.logger.debug(
+                "PySide detected - the existing version will be used."
+            )
+            # return
 
-        # finally try to get QtGui from sgtk
-        # try:
-        #     from sgtk.platform.qt import QtGui
-        # except:
-        #     self.logger.debug("Couldn't import QtGui from sgtk...")
+        finally try to get QtGui from sgtk
+        try:
+            from sgtk.platform.qt import QtGui
+        except:
+            self.logger.debug("Couldn't import QtGui from sgtk...")
 
         try:
             # from PySide import QtGui
@@ -571,17 +571,17 @@ class FusionEngine(Engine):
         else:
             self.logger.error("Unknown platform - cannot initialize PySide!")
 
-        # # now try to import it
-        # try:
-        #     # from PySide import QtGui
-        #     from sgtk.platform.qt import QtGui
-        # except Exception as exception:
-        #     traceback.print_exc()
-        #     self.logger.error(
-        #         "PySide could not be imported! Apps using pyside will not "
-        #         "operate correctly! Error reported: %s",
-        #         exception,
-        #     )
+        # now try to import it
+        try:
+            # from PySide import QtGui
+            from sgtk.platform.qt import QtGui
+        except Exception as exception:
+            traceback.print_exc()
+            self.logger.error(
+                "PySide could not be imported! Apps using pyside will not "
+                "operate correctly! Error reported: %s",
+                exception,
+            )
 
     def _get_dialog_parent(self):
         """
