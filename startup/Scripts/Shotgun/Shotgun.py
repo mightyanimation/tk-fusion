@@ -10,10 +10,7 @@ from datetime import datetime
 
 # lock file to avoid run engine creation twice!!
 # Fusion issues...
-lockfile = os.path.join(os.environ["APPDATA"],
-                        "Mighty",
-                        "FusionEngine",
-                        "Lock")
+lockfile = os.path.join(os.environ["APPDATA"], "Mighty", "FusionEngine", "Lock")
 container = os.path.dirname(lockfile)
 mighty_folder = os.path.dirname(container)
 
@@ -39,13 +36,16 @@ if os.path.exists(lockfile):
         try:
             os.remove(lockfile)
         except:
-            print('Old lock file can not be removed, delete manually\n{}'.format(lockfile))
+            print(
+                "Old lock file can not be removed, delete manually\n{}".format(lockfile)
+            )
 
 # Getting time to create the lock file
 time.sleep(random.uniform(0.0, 2.0))
 if not os.path.exists(lockfile):
-    with open(lockfile, 'w'): pass
-    
+    with open(lockfile, "w"):
+        pass
+
     fusion = bmd.scriptapp("Fusion")
     comp = fusion.GetCurrentComp()
     if comp is None:
@@ -60,25 +60,25 @@ if not os.path.exists(lockfile):
     env_context = os.environ.get("SGTK_CONTEXT")
     context = sgtk.context.deserialize(env_context)
 
-    #if comp is not None:
+    # if comp is not None:
     try:
-        path = comp.GetAttrs()['COMPS_FileName']
+        path = comp.GetAttrs()["COMPS_FileName"]
         tk = sgtk.sgtk_from_path(path)
         context = tk.context_from_path(path)
     except:
-        #print traceback.format_exc()
+        # print(traceback.format_exc())
         pass
 
-    logger.debug('Initializing engine')
+    logger.debug("Initializing engine")
     try:
         engine = sgtk.platform.start_engine(env_engine, context.sgtk, context)
         if os.path.exists(lockfile):
             os.remove(lockfile)
 
         from sgtk.platform.qt import QtGui, QtCore
+
         engine._qt_app.exec_()
     except:
         if os.path.exists(lockfile):
             os.remove(lockfile)
-        print traceback.format_exc()
-
+        print(traceback.format_exc())

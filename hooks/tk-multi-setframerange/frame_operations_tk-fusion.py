@@ -22,11 +22,19 @@ HookBaseClass = sgtk.get_hook_baseclass()
 
 class FrameOperation(HookBaseClass):
     """
-    Hook called to perform a frame operation with the 
+    Hook called to perform a frame operation with the
     current scene
     """
 
-    def execute(self, operation, head_in_frame=None, in_frame=None, out_frame=None, tail_out_frame=None, **kwargs):
+    def execute(
+        self,
+        operation,
+        head_in_frame=None,
+        in_frame=None,
+        out_frame=None,
+        tail_out_frame=None,
+        **kwargs
+    ):
         """
         Main hook entry point
 
@@ -34,11 +42,11 @@ class FrameOperation(HookBaseClass):
                     Frame operation to perform
 
         :in_frame: int
-                    in_frame for the current context (e.g. the current shot, 
+                    in_frame for the current context (e.g. the current shot,
                                                       current asset etc)
 
         :out_frame: int
-                    out_frame for the current context (e.g. the current shot, 
+                    out_frame for the current context (e.g. the current shot,
                                                       current asset etc)
 
         :returns:   Depends on operation:
@@ -48,81 +56,84 @@ class FrameOperation(HookBaseClass):
         """
         fusion = bmd.scriptapp("Fusion")
         comp = fusion.GetCurrentComp()
-        #comp = fusion.GetAttrs()["FUSIONH_CurrentComp"]
-        
-        #if comp is None:
+        # comp = fusion.GetAttrs()["FUSIONH_CurrentComp"]
+
+        # if comp is None:
         #    bmd2 = imp.load_dynamic('fusionscript', 'C:\\Program Files\\Blackmagic Design\\Fusion 16\\fusionscript.dll')
         #    fusion2 =  bmd2.scriptapp('Fusion')
         #    comp = fusion2.GetCurrentComp()
-        
-        
+
         if comp is None:
-            #print fusion.GetCompList()
+            # print(fusion.GetCompList())
             for key, c in fusion.GetCompList().items():
-                if not 'SetAttrs' in dir(c):
-                    #print 'Ignoring ', key, c
+                if not "SetAttrs" in dir(c):
+                    # print('Ignoring ', key, c)
                     comp = c.Composition()
                     cur_comp = str(c.GetAttrs()["COMPS_Name"])
                     comp_path = str(c.GetAttrs()["COMPS_FileName"])
-                    print "   ", cur_comp, comp_path
+                    print("   ", cur_comp, comp_path)
                 comp = c
-                self.fusion_setupScene(comp, in_frame, head_in_frame,
-                    out_frame, tail_out_frame)
-        
-        print 15*'*/'
-        print 15*'*/'
-        comp.SetAttrs({'COMPN_GlobalEnd' : 10})
-        comp.SetAttrs({'COMPN_RenderEnd': 10})
+                self.fusion_setupScene(
+                    comp, in_frame, head_in_frame, out_frame, tail_out_frame
+                )
+
+        print(15 * "*/")
+        print(15 * "*/")
+        comp.SetAttrs({"COMPN_GlobalEnd": 10})
+        comp.SetAttrs({"COMPN_RenderEnd": 10})
 
         if operation == "get_frame_range":
             current_in = int(comp.GetAttrs()["COMPN_GlobalStart"])
             current_out = int(comp.GetAttrs()["COMPN_GlobalEnd"])
             return (current_in, current_out)
- 
+
         elif operation == "set_frame_range":
             # set frame ranges for plackback
-            comp.SetAttrs({'COMPN_GlobalEnd' : out_frame})
-            comp.SetAttrs({'COMPN_RenderEnd': tail_out_frame})
-            comp.SetAttrs({'COMPN_GlobalStart' : in_frame})
-            comp.SetAttrs({'COMPN_RenderStart': head_in_frame})
+            comp.SetAttrs({"COMPN_GlobalEnd": out_frame})
+            comp.SetAttrs({"COMPN_RenderEnd": tail_out_frame})
+            comp.SetAttrs({"COMPN_GlobalStart": in_frame})
+            comp.SetAttrs({"COMPN_RenderStart": head_in_frame})
             return True
 
-    
-    def fusion_setupScene(self, comp, in_frame, head_in_frame, out_frame, tail_out_frame):
-        """ All operations to start working in fusion """
-        print 30 * "*"
-        print "Initializing "
-        
+    def fusion_setupScene(
+        self, comp, in_frame, head_in_frame, out_frame, tail_out_frame
+    ):
+        """All operations to start working in fusion"""
+        print(30 * "*")
+        print("Initializing ")
+
         FIRST_FRAME = 1001
         LAST_FRAME = 1100
         FRAME_WIDTH = 1920
         FRAME_HEIGHT = 1080
         FPS = 25
 
-        comp.SetAttrs({
-            'COMPN_RenderStartTime': head_in_frame, 
-            'COMPN_RenderStart': head_in_frame,
-            'COMPN_GlobalStart': in_frame,
+        comp.SetAttrs(
+            {
+                "COMPN_RenderStartTime": head_in_frame,
+                "COMPN_RenderStart": head_in_frame,
+                "COMPN_GlobalStart": in_frame,
+                "COMPN_CurrentTime": head_in_frame,
+                "COMPN_RenderEndTime": tail_out_frame,
+                "COMPN_RenderEnd": tail_out_frame,
+                "COMPN_GlobalEnd": out_frame,
+            }
+        )
 
-            'COMPN_CurrentTime': head_in_frame,
-
-            'COMPN_RenderEndTime': tail_out_frame,
-            'COMPN_RenderEnd': tail_out_frame,
-            'COMPN_GlobalEnd': out_frame,
-            })
-
-        comp.SetPrefs({
-            "Comp.FrameFormat.Name": "Test HDTV 1080",
-            "Comp.FrameFormat.Width": FRAME_WIDTH,
-            "Comp.FrameFormat.Height": FRAME_HEIGHT,
-            "Comp.FrameFormat.AspectX": 1.0,
-            "Comp.FrameFormat.AspectY": 1.0,
-            "Comp.FrameFormat.GuideRatio": 1.77777777777778,
-            "Comp.FrameFormat.Rate": FPS,
-            "Comp.FrameFormat.DepthInteractive": 2,    #16 bits Float
-            "Comp.FrameFormat.DepthFull": 2,          #16 bits Float
-            "Comp.FrameFormat.DepthPreview": 2        #16 bits Float
-            })
+        comp.SetPrefs(
+            {
+                "Comp.FrameFormat.Name": "Test HDTV 1080",
+                "Comp.FrameFormat.Width": FRAME_WIDTH,
+                "Comp.FrameFormat.Height": FRAME_HEIGHT,
+                "Comp.FrameFormat.AspectX": 1.0,
+                "Comp.FrameFormat.AspectY": 1.0,
+                "Comp.FrameFormat.GuideRatio": 1.77777777777778,
+                "Comp.FrameFormat.Rate": FPS,
+                "Comp.FrameFormat.DepthInteractive": 2,  # 16 bits Float
+                "Comp.FrameFormat.DepthFull": 2,  # 16 bits Float
+                "Comp.FrameFormat.DepthPreview": 2,  # 16 bits Float
+            }
+        )
 
         """
         msg = QtGui.QMessageBox()
@@ -134,6 +145,6 @@ class FrameOperation(HookBaseClass):
         msg.setWindowTitle("MessageBox demo")
         msg.show()
         """
-        #proj:SetSetting('timelineResolutionWidth', "2000")
-        print 30 * "*"
-        print 15 * "-*"
+        # proj:SetSetting('timelineResolutionWidth', "2000")
+        print(30 * "*")
+        print(15 * "-*")

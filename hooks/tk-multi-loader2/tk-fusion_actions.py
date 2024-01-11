@@ -9,7 +9,7 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 """
-Hook that loads defines all the available actions, broken down by publish type. 
+Hook that loads defines all the available actions, broken down by publish type.
 """
 
 import os
@@ -29,7 +29,7 @@ class FusionActions(HookBaseClass):
     def generate_actions(self, sg_publish_data, actions, ui_area):
         """
         Returns a list of action instances for a particular publish.
-        This method is called each time a user clicks a publish somewhere in 
+        This method is called each time a user clicks a publish somewhere in
         the UI.
         The data returned from this hook will be used to populate the actions
         menu for a publish.
@@ -51,12 +51,12 @@ class FusionActions(HookBaseClass):
         for this publish.
 
         The ui_area parameter is a string and indicates where the publish is to
-        be shown. 
-        - If it will be shown in the main browsing area, "main" is passed. 
+        be shown.
+        - If it will be shown in the main browsing area, "main" is passed.
         - If it will be shown in the details area, "details" is passed.
-        - If it will be shown in the history area, "history" is passed. 
+        - If it will be shown in the history area, "history" is passed.
 
-        Please note that it is perfectly possible to create more than one 
+        Please note that it is perfectly possible to create more than one
         action "instance" for an action! You can for example do scene
         introspection - if the action passed in is "character_attachment"
         you may for example scan the scene, figure out all the nodes
@@ -75,35 +75,50 @@ class FusionActions(HookBaseClass):
          description
         """
         app = self.parent
-        app.log_debug("Generate actions called for UI element %s. "
-                      "Actions: %s. Publish Data: %s" % (ui_area,
-                                                         actions,
-                                                         sg_publish_data))
+        app.log_debug(
+            "Generate actions called for UI element %s. "
+            "Actions: %s. Publish Data: %s" % (ui_area, actions, sg_publish_data)
+        )
 
         action_instances = []
 
         if "read_node" in actions:
-            action_instances.append({"name": "read_node",
-                                     "params": None,
-                                     "caption": "Create Read Node",
-                                     "description": ("This will add a read "
-                                                     "node to the current "
-                                                     "scene.")})
+            action_instances.append(
+                {
+                    "name": "read_node",
+                    "params": None,
+                    "caption": "Create Read Node",
+                    "description": (
+                        "This will add a read " "node to the current " "scene."
+                    ),
+                }
+            )
 
         if "ensure_local" in actions:
-            action_instances.append({"name": "ensure_local",
-                                     "params": None,
-                                     "caption": "Download",
-                                     "description": ("This will very if the file"
-                                                     "exists, if not then "
-                                                     "it will be downloaded.")})
+            action_instances.append(
+                {
+                    "name": "ensure_local",
+                    "params": None,
+                    "caption": "Download",
+                    "description": (
+                        "This will very if the file"
+                        "exists, if not then "
+                        "it will be downloaded."
+                    ),
+                }
+            )
 
         if "copy_path" in actions:
-            action_instances.append({"name": "copy_path",
-                                     "params": None,
-                                     "caption": "Copy path",
-                                     "description": ("This will copy the publish "
-                                                     " path into the clipboard.")})
+            action_instances.append(
+                {
+                    "name": "copy_path",
+                    "params": None,
+                    "caption": "Copy path",
+                    "description": (
+                        "This will copy the publish " " path into the clipboard."
+                    ),
+                }
+            )
 
         return action_instances
 
@@ -123,7 +138,7 @@ class FusionActions(HookBaseClass):
             params: Parameters passed down from the generate_actions hook.
 
         .. note::
-            This is the default entry point for the hook. It reuses the 
+            This is the default entry point for the hook. It reuses the
             ``execute_action`` method for backward compatibility with hooks
             written for the previous version of the loader.
 
@@ -155,10 +170,10 @@ class FusionActions(HookBaseClass):
         :returns: No return value expected.
         """
         app = self.parent
-        app.log_debug("Execute action called for action %s. "
-                      "Parameters: %s. Publish Data: %s" % (name,
-                                                            params,
-                                                            sg_publish_data))
+        app.log_debug(
+            "Execute action called for action %s. "
+            "Parameters: %s. Publish Data: %s" % (name, params, sg_publish_data)
+        )
 
         # resolve path
         # toolkit uses utf-8 encoded strings internally and Natron API expects
@@ -168,16 +183,19 @@ class FusionActions(HookBaseClass):
         localfile_bool = False
         if name == "read_node":
             folder_path = os.path.dirname(path)
-            file_name = path.split('/')[-1] if '/' in path else path.split(os.sep())[-1]
-            file_info = file_name.split('.')
+            file_name = path.split("/")[-1] if "/" in path else path.split(os.sep())[-1]
+            file_info = file_name.split(".")
             for f in os.listdir(folder_path):
                 if os.path.isfile(os.path.join(folder_path, f)):
                     if f == file_name:
                         localfile_bool = True
                         break
 
-                    current_info = f.split('.')
-                    if file_info[0] == current_info[0] and file_info[-1] == current_info[-1]:
+                    current_info = f.split(".")
+                    if (
+                        file_info[0] == current_info[0]
+                        and file_info[-1] == current_info[-1]
+                    ):
                         localfile_bool = True
                         break
 
@@ -210,21 +228,23 @@ class FusionActions(HookBaseClass):
 
         (_, ext) = os.path.splitext(path)
 
-        valid_extensions = [".png", 
-                            ".jpg", 
-                            ".jpeg", 
-                            ".exr", 
-                            ".cin", 
-                            ".dpx", 
-                            ".tiff", 
-                            ".tif", 
-                            ".mov",
-                            ".mp4",
-                            ".psd",
-                            ".tga",
-                            ".ari",
-                            ".gif",
-                            ".iff"]
+        valid_extensions = [
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".exr",
+            ".cin",
+            ".dpx",
+            ".tiff",
+            ".tif",
+            ".mov",
+            ".mp4",
+            ".psd",
+            ".tga",
+            ".ari",
+            ".gif",
+            ".iff",
+        ]
 
         if ext.lower() not in valid_extensions:
             raise Exception("Unsupported file extension for '%s'!" % path)
@@ -234,16 +254,14 @@ class FusionActions(HookBaseClass):
 
         comp.Lock()
         if seq_range:
-            # override the detected frame range.            
+            # override the detected frame range.
             path = path % seq_range[0]
             trim_out = int(seq_range[1]) - int(seq_range[0])
             globalStart = comp.GetAttrs("COMPN_GlobalStart")
-            comp.Lock(); loader = comp.Loader({"Clip": path.replace('/', '\\')})
-            node_name = path.split('/')[-1].split(".")[0]
-            load_data = {
-                "TOOLS_Name": node_name,
-                "TOOLB_NameSet": True
-                }
+            comp.Lock()
+            loader = comp.Loader({"Clip": path.replace("/", "\\")})
+            node_name = path.split("/")[-1].split(".")[0]
+            load_data = {"TOOLS_Name": node_name, "TOOLB_NameSet": True}
             loader.SetAttrs(load_data)
             loader.GlobalIn = globalStart
             loader.GlobalOut = globalStart + trim_out
@@ -251,9 +269,9 @@ class FusionActions(HookBaseClass):
             loader.ClipTimeEnd = trim_out
             loader.TrimOut = trim_out
         else:
-            comp.Lock(); comp.Loader({"Clip": path.replace('/', '\\')})
+            comp.Lock()
+            comp.Loader({"Clip": path.replace("/", "\\")})
         comp.Unlock()
-
 
     def _ensure_file_is_local(self, path, published_file):
         """
@@ -265,29 +283,24 @@ class FusionActions(HookBaseClass):
         """
         self._find_sequence_range(path)
 
-        if not hasattr(self, 'metasync'):
-            self.metasync = \
-                self.load_framework("mty-framework-metasync")
+        if not hasattr(self, "metasync"):
+            self.metasync = self.load_framework("mty-framework-metasync")
 
         transfersManager = self.metasync.transfersManager
         if "%" in path:
             dirname = os.path.dirname(path)
-            if os.path.exists(dirname) and \
-                    self._collect_sequenced_files(path):
-                transfersManager \
-                    .ensure_local_dependencies(published_file)
+            if os.path.exists(dirname) and self._collect_sequenced_files(path):
+                transfersManager.ensure_local_dependencies(published_file)
                 return path
         else:
             if os.path.exists(path):
-                transfersManager \
-                    .ensure_local_dependencies(published_file)
+                transfersManager.ensure_local_dependencies(published_file)
                 return path
 
         transfersManager.ensure_file_is_local(path, published_file)
         transfersManager.ensure_local_dependencies(published_file)
 
         return path
-
 
     def _sequence_range_from_path(self, path):
         """
@@ -337,15 +350,14 @@ class FusionActions(HookBaseClass):
         # We know that the search will result in a match at this point,.
         # otherwise the glob wouldn't have found the file. We can search and
         # pull group 1 to get the integer frame number from the file root name.
-        frames = [int(re.search(frame_pattern, f).group(1))
-                  for f in file_roots]
+        frames = [int(re.search(frame_pattern, f).group(1)) for f in file_roots]
         return (min(frames), max(frames))
 
     def _find_sequence_range(self, path):
         """
         Helper method attempting to extract sequence information.
 
-        Using the toolkit template system, the path will be probed to 
+        Using the toolkit template system, the path will be probed to
         check if it is a sequence, and if so, frame information is
         attempted to be extracted.
 
@@ -370,8 +382,7 @@ class FusionActions(HookBaseClass):
         if not "SEQ" in fields:
             return None
 
-        files = self.parent.sgtk.paths_from_template(
-            template, fields, ["SEQ", "eye"])
+        files = self.parent.sgtk.paths_from_template(template, fields, ["SEQ", "eye"])
 
         # find frame numbers from these files:
         frames = []
@@ -403,11 +414,14 @@ class FusionActions(HookBaseClass):
     def _copy_publish_path(self, path):
         import os
         import sys
+
         python_modules_path = os.path.join(
-            os.path.dirname(self.disk_location), "external_python_modules")
-        print 30 * '*'
-        print python_modules_path
-        print 30 * '*'
+            os.path.dirname(self.disk_location), "external_python_modules"
+        )
+        print(30 * "*")
+        print(python_modules_path)
+        print(30 * "*")
         sys.path.append(python_modules_path)
         import pyperclip
+
         pyperclip.copy(path)

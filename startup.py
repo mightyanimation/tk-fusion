@@ -69,22 +69,22 @@ class FusionLauncher(SoftwareLauncher):
         required_env = {}
 
         current_os = sys.platform.lower()
-        
+
         if current_os == "darwin":
             python_path = os.environ.get("SHOTGUN_DESKTOP_INSTALL_PATH",
                                           "/Applications/Shotgun.app/Python")
             fusion_home = "/Library/Application Support/Blackmagic Design/Fusion"
-        
+
         elif current_os == "win32":
             python_path = os.environ.get("SHOTGUN_DESKTOP_INSTALL_PATH",
                                           "C:/Program Files/Shotgun/Python")
             fusion_home = "C:/ProgramData/Blackmagic Design/Fusion"
 
-        elif current_os == "linux2":
+        elif current_os == "linux":
             python_path = os.environ.get("SHOTGUN_DESKTOP_INSTALL_PATH",
                                           "/opt/Shotgun/Shotgun/Python")
-            fusion_home = "/var/BlackmagicDesign/Fusion"
- 
+            fusion_home = "/opt/BlackmagicDesign/Fusion"
+
         # Copy Fusion Startup modules to right folder
         copy_folder(os.path.join(self.disk_location, "startup"), fusion_home)
 
@@ -143,7 +143,6 @@ class FusionLauncher(SoftwareLauncher):
         """
         Find executables in the default install locations.
         """
-
 
         # all the executable templates for the current OS
         executable_templates = self.EXECUTABLE_TEMPLATES.get(sys.platform, [])

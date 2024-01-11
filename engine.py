@@ -15,16 +15,22 @@ https://en.wikipedia.org/wiki/Fusion_(software)
 import os
 import sys
 import time
+import pprint
 import inspect
 import logging
 import traceback
 
 from functools import wraps
 
-import tank
-from tank.log import LogManager
-from tank.platform import Engine
-from tank.platform.constants import SHOTGUN_ENGINE_NAME
+# import tank
+# from tank.log import LogManager
+# from tank.platform import Engine
+# from tank.platform.constants import SHOTGUN_ENGINE_NAME
+
+import sgtk
+from sgtk.log import LogManager
+from sgtk.platform import Engine
+from sgtk.platform.constants import SHOTGUN_ENGINE_NAME
 
 import BlackmagicFusion as bmd
 fusion = bmd.scriptapp("Fusion")
@@ -86,8 +92,8 @@ class FusionEngine(Engine):
         Resources reside in the core/platform/qt folder.
         :return: full path
         """
-        tank_platform_folder = os.path.abspath(inspect.getfile(tank.platform))
-        return os.path.join(tank_platform_folder, "qt", filename)
+        sgtk_platform_folder = os.path.abspath(inspect.getfile(sgtk.platform))
+        return os.path.join(sgtk_platform_folder, "qt", filename)
 
     def __toggle_debug_logging(self):
         """
@@ -140,7 +146,7 @@ class FusionEngine(Engine):
         Registers a "Reload and Restart" command with the engine if any
         running apps are registered via a dev descriptor.
         """
-        from tank.platform import restart
+        from sgtk.platform import restart
         self.register_command(
             "Reload and Restart",
             restart,
@@ -198,7 +204,7 @@ class FusionEngine(Engine):
 
         try:
             import inspect
-            import tank_vendor.shotgun_api3.lib.httplib2 as sapi3_httplib2
+            import sgtk_vendor.shotgun_api3.lib.httplib2 as sapi3_httplib2
             httplib2_file = inspect.getfile(sapi3_httplib2)
             httplib2_dir = os.path.dirname(httplib2_file)
             cacerts_file = os.path.join(httplib2_dir, "cacerts.txt")
@@ -224,7 +230,21 @@ class FusionEngine(Engine):
         """
         # unicode characters returned by the shotgun api need to be converted
         # to display correctly in all of the app windows
-        from tank.platform.qt import QtCore
+        from sgtk.platform.qt import QtCore
+
+        self.logger.info("sgtk: {}".format(sgtk))
+        self.logger.info("dir sgtk:\n{}".format(pprint.pformat(dir(sgtk))))
+
+        self.logger.info(
+            "dir sgtk.platform.qt:\n{}".format(pprint.pformat(dir(sgtk.platform.qt)))
+        )
+        self.logger.info("QtCore: {}".format(QtCore))
+
+        qt_text_codec = QtCore.QTextCodec
+        self.logger.info("qt_text_codec: {}".format(qt_text_codec))
+        self.logger.info(
+            "dir qt_text_codec:\n{}".format(pprint.pformat(dir(qt_text_codec)))
+        )
 
         # tell QT to interpret C strings as utf-8
         utf8 = QtCore.QTextCodec.codecForName("utf-8")
@@ -242,10 +262,10 @@ class FusionEngine(Engine):
 
         # check that we are running an ok version of fusion
         current_os = sys.platform
-        if current_os not in ["mac", "win32", "linux64"]:
-            raise tank.TankError("The current platform is not supported!"
+        if current_os not in ["mac", "win32", "linux"]:
+            raise sgtk.TankError("The current platform is not supported!"
                                  " Supported platforms "
-                                 "are Mac, Linux 64 and Windows 64.")
+                                 "are Mac, Linux and Windows.")
 
         fusion_build_version = str(fusion.Version)
         fusion_ver = float(".".join(fusion_build_version.split(".")[:2]))
@@ -253,7 +273,7 @@ class FusionEngine(Engine):
         if fusion_ver < 9.0:
             msg = ("Shotgun integration is not compatible with Fusion versions"
                    " older than 9")
-            raise tank.TankError(msg)
+            raise sgtk.TankError(msg)
 
         if fusion_ver > 9.0:
             # show a warning that this version of Fusion isn't yet fully tested
@@ -290,7 +310,8 @@ class FusionEngine(Engine):
                 show_info(msg)
 
             # always log the warning to the script editor:
-            self.logger.warning(msg)
+            if msg:
+                self.logger.warning(msg)
 
             # In the case of Windows, we have the possility of locking up if
             # we allow the PySide shim to import QtWebEngineWidgets.
@@ -314,7 +335,6 @@ class FusionEngine(Engine):
         if self.get_setting("use_sgtk_as_menu_name", False):
             self._menu_name = "Sgtk"
 
-
     def create_shotgun_menu(self, disabled=False):
         """
         Creates the main shotgun menu in fusion.
@@ -327,11 +347,11 @@ class FusionEngine(Engine):
         if self.has_ui:
             # create our menu handler
             tk_fusion = self.import_module("tk_fusion")
-            
-            self.menu_generator = tk_fusion.ShotgunMenu(self)
-            self.menu_generator.show()
-
+        #     self._menu_generator = tk_fusion.MenuGenerator(
+        #         self, self._menu_name)
+        #     self._menu_generator.create_menu(disabled=disabled)
             return True
+
         return False
 
     def _initialise_qapplication(self):
@@ -383,25 +403,23 @@ class FusionEngine(Engine):
         self.__register_open_log_folder_command()
         self.__register_reload_command()
 
-        if self.get_setting("automatic_context_switch", True):
-            # TODO check how to add instance in fusion 
-            if 'shotgun' in dir(fusion):
-                fusion.shotgun._engine_instance = self.instance_name
-                fusion.shotgun._menu_name = self._menu_name
-                fusion.shotgun._new_context = new_context
+        # if self.get_setting("automatic_context_switch", True):
+        #     fusion.shotgun._engine_instance = self.instance_name
+        #     fusion.shotgun._menu_name = self._menu_name
+        #     fusion.shotgun._new_context = new_context
 
-            self.logger.debug(
-                "Registered new open and save callbacks before "
-                "changing context."
-            )
+        #     self.logger.debug(
+        #         "Registered new open and save callbacks before "
+        #         "changing context."
+        #     )
 
-            # finally create the menu with the new context if needed
-            if old_context != new_context:
-                self.create_shotgun_menu()
+        #     # finally create the menu with the new context if needed
+        #     if old_context != new_context:
+        #         self.create_shotgun_menu()
 
     def _run_app_instance_commands(self):
         """
-        Runs the series of app instance commands listed in the 
+        Runs the series of app instance commands listed in the
         'run_at_startup' setting of the environment configuration yaml file.
         """
 
@@ -483,61 +501,43 @@ class FusionEngine(Engine):
         Handles the pyside init
         """
 
-        # first see if pyside2 is present
+        # # first see if pyside2 is present
+        # try:
+        #     from PySide2 import QtGui
+        # except:
+        #     # fine, we don't expect PySide2 to be present just yet
+        #     self.logger.debug("PySide2 not detected - trying for PySide now...")
+        # else:
+        #     # looks like pyside2 is already working! No need to do anything
+        #     self.logger.debug(
+        #         "PySide2 detected - the existing version will be used."
+        #     )
+        #     return
+
+        # # then see if pyside is present
+        # try:
+        #     from PySide import QtGui
+        # except:
+        #     # must be that a PySide version is not installed,
+        #     self.logger.debug(
+        #         "PySide not detected - it will be added to the setup now..."
+        #     )
+        # else:
+        #     # looks like pyside is already working! No need to do anything
+        #     self.logger.debug(
+        #         "PySide detected - the existing version will be used."
+        #     )
+        #     # return
+
+        # finally try to get QtGui from sgtk
+        # try:
+        #     from sgtk.platform.qt import QtGui
+        # except:
+        #     self.logger.debug("Couldn't import QtGui from sgtk...")
+
         try:
-            from PySide2 import QtGui
-        except:
-            # fine, we don't expect PySide2 to be present just yet
-            self.logger.debug("PySide2 not detected - trying for PySide now...")
-        else:
-            # looks like pyside2 is already working! No need to do anything
-            self.logger.debug(
-                "PySide2 detected - the existing version will be used."
-            )
-            return
-
-        # then see if pyside is present
-        try:
-            from PySide import QtGui
-        except:
-            # must be that a PySide version is not installed,
-            self.logger.debug(
-                "PySide not detected - it will be added to the setup now..."
-            )
-        else:
-            # looks like pyside is already working! No need to do anything
-            self.logger.debug(
-                "PySide detected - the existing version will be used."
-            )
-            return
-
-        current_os = sys.platform.lower()
-        if current_os == "darwin":
-            desktop_path = os.environ.get("SHOTGUN_DESKTOP_INSTALL_PATH",
-                                          "/Applications/Shotgun.app")
-            sys.path.append(os.path.join(desktop_path, "Contents", "Resources",
-                                         "Python", "lib", "python2.7",
-                                         "site-packages"))    
-
-        elif current_os == "win32":
-            desktop_path = os.environ.get("SHOTGUN_DESKTOP_INSTALL_PATH",
-                                          "C:/Program Files/Shotgun")
-            sys.path.append(os.path.join(desktop_path,
-                                         "Python", "Lib", "site-packages"))
-
-        elif current_os == "linux2":
-            desktop_path = os.environ.get("SHOTGUN_DESKTOP_INSTALL_PATH",
-                                          "/opt/Shotgun/Shotgun")
-            sys.path.append(os.path.join(desktop_path,
-                                         "Python", "Lib", "site-packages"))
-
-
-        else:
-            self.logger.error("Unknown platform - cannot initialize PySide!")
-
-        # now try to import it
-        try:
-            from PySide import QtGui
+            # from PySide import QtGui
+            from sgtk.platform.qt import QtGui
         except Exception as exception:
             traceback.print_exc()
             self.logger.error(
@@ -545,6 +545,43 @@ class FusionEngine(Engine):
                 "operate correctly! Error reported: %s",
                 exception,
             )
+
+
+        current_os = sys.platform.lower()
+        if current_os == "darwin":
+            desktop_path = os.environ.get("SHOTGUN_DESKTOP_INSTALL_PATH",
+                                          "/Applications/Shotgun.app")
+            sys.path.append(os.path.join(desktop_path, "Contents", "Resources",
+                                         "Python3", "lib", "python",
+                                         "site-packages"))
+
+        elif current_os == "win32":
+            desktop_path = os.environ.get("SHOTGUN_DESKTOP_INSTALL_PATH",
+                                          "C:/Program Files/Shotgun")
+            sys.path.append(os.path.join(desktop_path,
+                                         "Python3", "Lib", "site-packages"))
+
+        elif current_os == "linux":
+            desktop_path = os.environ.get("SHOTGUN_DESKTOP_INSTALL_PATH",
+                                          "/opt/Shotgun/Shotgun")
+            sys.path.append(os.path.join(desktop_path,
+                                         "Python3", "Lib", "site-packages"))
+
+
+        else:
+            self.logger.error("Unknown platform - cannot initialize PySide!")
+
+        # # now try to import it
+        # try:
+        #     # from PySide import QtGui
+        #     from sgtk.platform.qt import QtGui
+        # except Exception as exception:
+        #     traceback.print_exc()
+        #     self.logger.error(
+        #         "PySide could not be imported! Apps using pyside will not "
+        #         "operate correctly! Error reported: %s",
+        #         exception,
+        #     )
 
     def _get_dialog_parent(self):
         """
@@ -623,64 +660,7 @@ class FusionEngine(Engine):
                 # the original dialog list.
                 self.logger.debug("Closing dialog %s.", dialog_window_title)
                 dialog.close()
-            except Exception, exception:
+            except Exception as exception:
                 traceback.print_exc()
                 self.logger.error("Cannot close dialog %s: %s",
                                   dialog_window_title, exception)
-
-    def __update_nodes_version(self, new_path=None):
-        """
-            Update all the saver nodes in the comp.
-            Only if the path correspond to a template.
-        """
-        comp          = fusion.GetCurrentComp()
-        work_path     = comp.GetAttrs()['COMPS_FileName']
-        if new_path is not None:
-            work_path = new_path
-        work_tmpl     = self.sgtk.template_from_path(work_path)
-        if work_tmpl is None:
-            print("__update_nodes_version: Invalid path")
-            return
-        work_fields   = work_tmpl.get_fields(work_path)
-        list_of_tools = comp.GetToolList(False, "Saver") # Only selected:False
-
-        for index, tool in list_of_tools.iteritems ():
-            clip_path = tool.GetAttrs()['TOOLST_Clip_Name'].values()[0]
-
-            # If saver is empty
-            if clip_path in [None, "", " "]:
-                continue
-
-            sg_saver_bool    = tool.GetData("Shotgun_Saver_Node")
-            fields           = None
-            current_template = None
-            new_render_path  = None
-
-            # Validating metadata
-            if sg_saver_bool:
-                template_name    = tool.GetData ("Current_template")
-                current_template = self.sgtk.templates[template_name]
-            else: # Retro compatibility
-                current_template = self.sgtk.template_from_path(clip_path)
-
-            # Avoid savers out of the pipeline
-            if current_template is None:
-                continue
-
-            fields = current_template.get_fields(clip_path)
-
-            # Checking if the template use a version token
-            if not 'version' in fields.keys():
-                continue
-
-            for tool_field in fields.keys():
-                # Update the fields
-                if tool_field in work_fields.keys():
-                    fields[tool_field]=work_fields[tool_field]
-
-            # Updating path from current saver
-            new_render_path  = current_template.apply_fields(fields)
-            tool.Clip        = new_render_path
-
-        comp.Save(work_path)
-        print('Nodes update complete')

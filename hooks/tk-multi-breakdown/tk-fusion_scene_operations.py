@@ -29,8 +29,8 @@ class BreakdownSceneOperations(Hook):
         to analyze the current scene and return a list of references that are
         to be potentially operated on.
 
-        The return data structure is a list of dictionaries. Each scene 
-        reference that is returned should be represented by a dictionary with 
+        The return data structure is a list of dictionaries. Each scene
+        reference that is returned should be represented by a dictionary with
         three keys:
 
         - "attr": The filename attribute of the 'node' that is to be operated
@@ -42,15 +42,15 @@ class BreakdownSceneOperations(Hook):
 
         Toolkit will scan the list of items, see if any of the objects matches
         any templates and try to determine if there is a more recent version
-        available. Any such versions are then displayed in the UI as out of 
+        available. Any such versions are then displayed in the UI as out of
         date.
         """
         engine = self.parent.engine
-        
+
         # Introspect the natron scene for read and write nodes
         # so we can gather the filenames available.
         refs = []
-        
+
         comp = fusion.GetCurrentComp()
         engine.log_debug("Scene operation: getting current comp")
         comp.Lock()
@@ -60,18 +60,18 @@ class BreakdownSceneOperations(Hook):
             if ref_path:
                 engine.log_debug("Scanning node {}: {}".format(tool.GetAttrs("TOOLS_Name"), ref_path[0]))
                 #ref_path[0].replace("/", os.path.sep)
-                print "ref_path", ref_path[0]
+                print("ref_path", ref_path[0])
                 new_path = ref_path[0].split('.')
                 new_path = "{}.%04d.{}".format(new_path[0], new_path[-1])
                 new_path = new_path.replace('\\', '/')
-                print "new path      ", new_path
+                print("new path      ", new_path)
                 #refs.append({"node": tool.GetAttrs("TOOLS_Name"), "type": "file", "path": ref_path[0]})
                 refs.append({"node": tool.GetAttrs("TOOLS_Name"), "type": "Rendered Image", "path": new_path})
                 #{"node": node_name, "type": "reference", "path": maya_path}
 
         engine.log_debug("Scene operation: unlock current comp")
         comp.Unlock()
-        print 'end ref------------------------------'
+        print('end ref------------------------------')
         return refs
 
     def update(self, items):
@@ -101,7 +101,7 @@ class BreakdownSceneOperations(Hook):
             node = i["node"]
             node_type = i["type"]
             new_path = i["path"]
-            
+
             if node_type == "file":
                 loader = loaders[node]
                 if loader:
@@ -117,5 +117,5 @@ class BreakdownSceneOperations(Hook):
                     loader.GlobalIn = globalIn
                     loader.GlobalOut = globalOut
                     loader.ClipTimeStart = trimIn
-                    loader.ClipTimeEnd = trimOut              
+                    loader.ClipTimeEnd = trimOut
                     comp.Unlock()

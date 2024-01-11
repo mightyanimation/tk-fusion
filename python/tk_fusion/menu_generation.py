@@ -9,22 +9,23 @@ import subprocess
 import time
 from sgtk.platform.qt import QtGui, QtCore
 
+
 class ShotgunMenu(QtGui.QWidget):
     """Simple Test"""
-    
+
     def __init__(self, engine):
         self.engine = engine
         self.saver_nodes = {}
         # Verify fusion
         self.verify_fusion()
-        
-        self.pyside2_bool = int(QtCore.__version__.split('.')[0]) > 4
+
+        self.pyside2_bool = int(QtCore.__version__.split(".")[0]) > 4
         super(ShotgunMenu, self).__init__()
-        #self.setGeometry(50, 50, 260, 100)
+        # self.setGeometry(50, 50, 260, 100)
         self.setMinimumWidth(250)
         self.setWindowTitle("Shotgun: Menu Panel")
 
-        #Global layout
+        # Global layout
         qvboxLayoutGlobal = QtGui.QVBoxLayout()
         qvboxLayoutGlobal.setContentsMargins(0, 0, 0, 6)
         qvboxLayoutGlobal.setSizeConstraint(QtGui.QLayout.SetFixedSize)
@@ -44,7 +45,7 @@ class ShotgunMenu(QtGui.QWidget):
         frame_01.setLayout(frame_01_qhboxLayout)
         frame_01_qhboxLayout.addWidget(self.context_button)
 
-        self.show_btn = QtGui.QPushButton('<')
+        self.show_btn = QtGui.QPushButton("<")
         self.show_btn.setMaximumSize(QtCore.QSize(20, 20))
         self.show_btn.clicked.connect(self.show_options)
         frame_01_qhboxLayout.addWidget(self.show_btn)
@@ -54,8 +55,8 @@ class ShotgunMenu(QtGui.QWidget):
         self.qvboxLayout = QtGui.QVBoxLayout()
         self.qvboxLayout.setContentsMargins(6, 0, 6, 0)
         self.frame_02.setLayout(self.qvboxLayout)
-        
-        #self.qvboxLayout.addWidget(frame_01)
+
+        # self.qvboxLayout.addWidget(frame_01)
         line_01 = QtGui.QFrame()
         line_01.setFrameShape(QtGui.QFrame.HLine)
         line_01.setFrameShadow(QtGui.QFrame.Sunken)
@@ -68,17 +69,17 @@ class ShotgunMenu(QtGui.QWidget):
         self.func_relations = {}
 
         # Menu always on top
-        flags = QtCore.Qt.WindowFlags(QtCore.Qt.WindowStaysOnTopHint |
-                QtCore.Qt.WindowTitleHint)
+        flags = QtCore.Qt.WindowFlags(
+            QtCore.Qt.WindowStaysOnTopHint | QtCore.Qt.WindowTitleHint
+        )
         self.setWindowFlags(flags)
 
         self.populateLayout()
 
-
     def get_command_info(self, command_name):
         """
         Receive the name of the command or app register in the engine,
-        and return the description and the icon if they exists. 
+        and return the description and the icon if they exists.
 
         Parameters:
             command_name (str): Register name in the engine commands/App.
@@ -90,22 +91,25 @@ class ShotgunMenu(QtGui.QWidget):
         icon_str = icon_path = description = None
 
         command_dict = self.engine.commands[command_name]
-        command_properties = command_dict['properties']
-        
-        if 'icon' in command_properties.keys(): icon_str = 'icon'
-        if 'icons' in command_properties.keys(): icon_str = 'icons'
-        if 'description' in command_properties.keys():
-            description = command_properties['description']
+        command_properties = command_dict["properties"]
+
+        if "icon" in command_properties.keys():
+            icon_str = "icon"
+        if "icons" in command_properties.keys():
+            icon_str = "icons"
+        if "description" in command_properties.keys():
+            description = command_properties["description"]
 
         if icon_str:
             icon_data = command_properties[icon_str]
-            if isinstance(icon_data, str): icon_path=icon_data
+            if isinstance(icon_data, str):
+                icon_path = icon_data
             else:
                 i_key = icon_data.keys()[0]
-                icon_path = icon_data[i_key]['png']
+                icon_path = icon_data[i_key]["png"]
             # Special cases, for some reason, there is a string
             # in the path that does not exists....
-            icon_path = icon_path.replace('__init__.pyc', '')
+            icon_path = icon_path.replace("__init__.pyc", "")
 
         return icon_path, description
 
@@ -119,8 +123,10 @@ class ShotgunMenu(QtGui.QWidget):
             None
         """
         # Change text
-        if self.show_btn.text() == '>': self.show_btn.setText('<')
-        else: self.show_btn.setText('>')
+        if self.show_btn.text() == ">":
+            self.show_btn.setText("<")
+        else:
+            self.show_btn.setText(">")
 
         # Change visibility
         self.frame_02.setVisible(not self.frame_02.isVisible())
@@ -128,12 +134,12 @@ class ShotgunMenu(QtGui.QWidget):
     def connect_to_engine(self):
         triggered_element = self.sender().objectName()
         if triggered_element in self.engine.commands.keys():
-            self.engine.commands[triggered_element]['callback'].__call__()
+            self.engine.commands[triggered_element]["callback"].__call__()
         elif triggered_element in self.saver_nodes.keys():
             self.create_saver(triggered_element)
-        elif triggered_element == 'Unlock_comp':
+        elif triggered_element == "Unlock_comp":
             self.unlock_comp()
-        elif triggered_element == 'Deadline_command':
+        elif triggered_element == "Deadline_command":
             # Load framework
             acciones = self.engine.load_framework("Engine_Deadline")
             acciones.enviarGranja()
@@ -141,8 +147,6 @@ class ShotgunMenu(QtGui.QWidget):
             # imprimir ayuda print help(self)
             # imprimir metodos y variables print dir(self)
             # TODO
-
-            
 
     def populateLayout(self):
         """
@@ -155,17 +159,23 @@ class ShotgunMenu(QtGui.QWidget):
         """
         eng_dict = {}
         # Context options will be displayed under the context button
-        context_engine_options =  [
-            ['Jump to Shotgun', self._jump_to_sg], 
-            ['Jump to File System', self._jump_to_fs],
-            'Ensure Tasks Folders', 2,
-            'Jump to Screening Room in RV',
-            'Jump to Screening Room Web Player', 'Work Area Info...', 2,
-            'Reload and Restart', 'Open Log Folder', 'Toggle Debug Logging']
+        context_engine_options = [
+            ["Jump to Shotgun", self._jump_to_sg],
+            ["Jump to File System", self._jump_to_fs],
+            "Ensure Tasks Folders",
+            2,
+            "Jump to Screening Room in RV",
+            "Jump to Screening Room Web Player",
+            "Work Area Info...",
+            2,
+            "Reload and Restart",
+            "Open Log Folder",
+            "Toggle Debug Logging",
+        ]
 
         for ctx_option in context_engine_options:
             if isinstance(ctx_option, list):
-                #Creating menu button
+                # Creating menu button
                 menu_action = QtGui.QAction(ctx_option[0], self)
                 menu_action.triggered.connect(ctx_option[1])
                 self.context_menu.addAction(menu_action)
@@ -179,34 +189,40 @@ class ShotgunMenu(QtGui.QWidget):
                 # Get app/command extra info
                 icon_path, description_str = self.get_command_info(ctx_option)
                 # Set icon
-                if icon_path: menu_action.setIcon(QtGui.QIcon(icon_path))
+                if icon_path:
+                    menu_action.setIcon(QtGui.QIcon(icon_path))
                 # Set tooltip
-                if description_str: menu_action.setToolTip(description_str)
+                if description_str:
+                    menu_action.setToolTip(description_str)
 
                 self.context_menu.addAction(menu_action)
 
             elif isinstance(ctx_option, int):
                 # Separators
-                for x in range(ctx_option): self.context_menu.addSeparator()
-        
-        # Populating menu with engine fuctions 
+                for x in range(ctx_option):
+                    self.context_menu.addSeparator()
+
+        # Populating menu with engine fuctions
         for cmd_name, cmd_data in self.engine.commands.items():
             eng_dict[id(cmd_data)] = cmd_data
             # Skip if the engine app/command  is already in the context menu
-            if cmd_name in context_engine_options: continue
+            if cmd_name in context_engine_options:
+                continue
 
             # Create the button for the main menu
-            app_button = QtGui.QPushButton('  {}'.format(cmd_name))
-            app_button.setObjectName('{}'.format(cmd_name))
+            app_button = QtGui.QPushButton("  {}".format(cmd_name))
+            app_button.setObjectName("{}".format(cmd_name))
 
             # updating action
             app_button.clicked.connect(self.connect_to_engine)
 
             icon_path, description = self.get_command_info(cmd_name)
             # If the button has icon
-            if icon_path: app_button.setIcon(QtGui.QIcon(icon_path))
+            if icon_path:
+                app_button.setIcon(QtGui.QIcon(icon_path))
             # If the button has description
-            if description: app_button.setToolTip(description)
+            if description:
+                app_button.setToolTip(description)
             self.qvboxLayout.addWidget(app_button)
 
         # Regular menu element
@@ -215,16 +231,16 @@ class ShotgunMenu(QtGui.QWidget):
         line_02.setFrameShadow(QtGui.QFrame.Sunken)
         self.qvboxLayout.addWidget(line_02)
 
-        unlock_comp_btn = QtGui.QPushButton('Unlock comp')
-        unlock_comp_btn.setObjectName('Unlock_comp')
+        unlock_comp_btn = QtGui.QPushButton("Unlock comp")
+        unlock_comp_btn.setObjectName("Unlock_comp")
         unlock_comp_btn.clicked.connect(self.connect_to_engine)
-        unlock_comp_btn.setToolTip('Option to unlock fusion when the viewer is freeze')
+        unlock_comp_btn.setToolTip("Option to unlock fusion when the viewer is freeze")
         self.qvboxLayout.addWidget(unlock_comp_btn)
 
-        deadline_comp_btn = QtGui.QPushButton('Send to Deadline')
-        deadline_comp_btn.setObjectName('Deadline_command')
+        deadline_comp_btn = QtGui.QPushButton("Send to Deadline")
+        deadline_comp_btn.setObjectName("Deadline_command")
         deadline_comp_btn.clicked.connect(self.connect_to_engine)
-        deadline_comp_btn.setToolTip('Render all enabled saver nodes in deadline')
+        deadline_comp_btn.setToolTip("Render all enabled saver nodes in deadline")
         self.qvboxLayout.addWidget(deadline_comp_btn)
 
         savers_menu = QtGui.QMenu(self)
@@ -232,16 +248,16 @@ class ShotgunMenu(QtGui.QWidget):
         sg_saver.setMenu(savers_menu)
         sg_saver.setStyleSheet("background-color: #810B44")
 
-        for element in self.engine.get_setting('saver_nodes'):
-            self.saver_nodes[element['name']] = element
-            menu_action = QtGui.QAction(element['name'], self)
-            menu_action.setObjectName(element['name'])
+        for element in self.engine.get_setting("saver_nodes"):
+            self.saver_nodes[element["name"]] = element
+            menu_action = QtGui.QAction(element["name"], self)
+            menu_action.setObjectName(element["name"])
             menu_action.triggered.connect(self.connect_to_engine)
             savers_menu.addAction(menu_action)
 
         if len(self.saver_nodes.keys()):
             self.qvboxLayout.addWidget(sg_saver)
-    
+
     def _jump_to_sg(self):
         """
         Jump to shotgun, launch web browser
@@ -250,90 +266,90 @@ class ShotgunMenu(QtGui.QWidget):
         QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
 
     def create_saver(self, sg_saver_name):
-        fusion        = bmd.scriptapp("Fusion")
-        comp          = fusion.GetCurrentComp()
-        path          = comp.GetAttrs()['COMPS_FileName']
+        fusion = bmd.scriptapp("Fusion")
+        comp = fusion.GetCurrentComp()
+        path = comp.GetAttrs()["COMPS_FileName"]
         sg_saver_info = self.saver_nodes[sg_saver_name]
 
         work_template = self.engine.sgtk.template_from_path(path)
         if work_template is None:
-            msg_ = 'To create a saver node\nSave your comp first!'
+            msg_ = "To create a saver node\nSave your comp first!"
             msgBox = QtGui.QMessageBox()
             msgBox.setText(msg_)
             msgBox.exec_()
             return
 
-        fields            = work_template.get_fields(path)
-        work_version      = work_template.get_fields(path).get('version')
-        comp_format       = comp.GetPrefs().get('Comp').get('FrameFormat')
-        fields['height']  = int(comp_format.get('Height'))
-        fields['width']   = int(comp_format.get('Width'))
+        fields = work_template.get_fields(path)
+        work_version = work_template.get_fields(path).get("version")
+        comp_format = comp.GetPrefs().get("Comp").get("FrameFormat")
+        fields["height"] = int(comp_format.get("Height"))
+        fields["width"] = int(comp_format.get("Width"))
         try:
-            sg_shot       = get_sg_shot_info(['sg_cut_in'])
-            fields['SEQ'] = sg_shot['sg_cut_in']
+            sg_shot = get_sg_shot_info(["sg_cut_in"])
+            fields["SEQ"] = sg_shot["sg_cut_in"]
         except:
-            fields['SEQ'] = 1001
+            fields["SEQ"] = 1001
 
         # Applying aov fields!
-        if 'aov_name' in sg_saver_info.keys():
-            fields['aov_name'] = sg_saver_info['aov_name']
+        if "aov_name" in sg_saver_info.keys():
+            fields["aov_name"] = sg_saver_info["aov_name"]
         else:
-            title, msg = 'Create AOV saver', 'Enter AOV name:'
+            title, msg = "Create AOV saver", "Enter AOV name:"
             text, resp = QtGui.QInputDialog.getText(self, title, msg)
             if resp:
-                fields['aov_name'] = text
+                fields["aov_name"] = text
             else:
                 return
 
-        render_template_name = sg_saver_info['render_template']
-        render_template      = self.engine.sgtk.templates[render_template_name]
-        render_path          = render_template.apply_fields(fields)
+        render_template_name = sg_saver_info["render_template"]
+        render_template = self.engine.sgtk.templates[render_template_name]
+        render_path = render_template.apply_fields(fields)
 
-        while not comp.GetAttrs()['COMPB_Locked']:
+        while not comp.GetAttrs()["COMPB_Locked"]:
             comp.Lock()
 
-        saver      = comp.Saver({"Clip": render_path})
-        saver_atts = {"TOOLS_Name": "sg_%{}".format(sg_saver_name),
-                      "format_id": sg_saver_info['format_id'],
-                      'format_settings': sg_saver_info['format_settings']}
+        saver = comp.Saver({"Clip": render_path})
+        saver_atts = {
+            "TOOLS_Name": "sg_%{}".format(sg_saver_name),
+            "format_id": sg_saver_info["format_id"],
+            "format_settings": sg_saver_info["format_settings"],
+        }
         saver.SetAttrs(saver_atts)
 
-        while comp.GetAttrs()['COMPB_Locked']:
+        while comp.GetAttrs()["COMPB_Locked"]:
             comp.Unlock()
 
-        saver.SetData ("Shotgun_Saver_Node", True)
-        saver.SetData ("Current_template", render_template.name)
-  
+        saver.SetData("Shotgun_Saver_Node", True)
+        saver.SetData("Current_template", render_template.name)
+
     def get_sg_shot_info(self, shot_fields):
         engine = self.engine
         sg = engine.shotgun
         sg_proj = engine.context.project
 
-        context_tokens = str(engine.context).split(' ')
+        context_tokens = str(engine.context).split(" ")
         entity_name = context_tokens[2]
-        shot_filter = [['project', 'is', sg_proj],
-                       ['code', 'is', entity_name]]
+        shot_filter = [["project", "is", sg_proj], ["code", "is", entity_name]]
         # shot_fields = ['sg_cut_in', 'sg_cut_out']
-        sg_shot = sg.find_one('Shot', shot_filter, shot_fields)
+        sg_shot = sg.find_one("Shot", shot_filter, shot_fields)
         return sg_shot
 
     def unlock_comp(self):
         fusion = bmd.scriptapp("Fusion")
         comp = fusion.GetCurrentComp()
         was_locked_bool = False
-        while comp.GetAttrs()['COMPB_Locked']:
+        while comp.GetAttrs()["COMPB_Locked"]:
             was_locked_bool = True
             comp.Unlock()
 
         if was_locked_bool:
-            msg_ = 'Unlock complete'
+            msg_ = "Unlock complete"
         else:
-            msg_ = 'Comp was not locked'
+            msg_ = "Comp was not locked"
 
         msgBox = QtGui.QMessageBox()
         msgBox.setText(msg_)
         msgBox.exec_()
-
 
     def _jump_to_fs(self):
         """
@@ -342,7 +358,6 @@ class ShotgunMenu(QtGui.QWidget):
         # launch one window for each location on disk
         paths = self.engine.context.filesystem_locations
         for disk_location in paths:
-
             # get the setting
             system = sys.platform
 
@@ -351,7 +366,7 @@ class ShotgunMenu(QtGui.QWidget):
                 cmd = 'xdg-open "%s"' % disk_location
             elif system == "darwin":
                 cmd = 'open "%s"' % disk_location
-            elif system == "win32":  
+            elif system == "win32":
                 cmd = 'cmd.exe /C start "Folder" "%s"' % disk_location
             else:
                 raise Exception("Platform '%s' is not supported." % system)
@@ -363,109 +378,117 @@ class ShotgunMenu(QtGui.QWidget):
     def __create_sg_saver(self, ext_type):
         fusion = bmd.scriptapp("Fusion")
         comp = fusion.GetCurrentComp()
-        path = comp.GetAttrs()['COMPS_FileName']
+        path = comp.GetAttrs()["COMPS_FileName"]
 
         task_type = self.engine.context.entity.get("type")
         work_template = self.engine.sgtk.template_from_path(path)
         fields = work_template.get_fields(path)
 
-        comp_format = comp.GetPrefs().get('Comp').get('FrameFormat')
-        fields['height'] = int(comp_format.get('Height'))
-        fields['width'] = int(comp_format.get('Width'))
-        fields['output'] = 'output'
+        comp_format = comp.GetPrefs().get("Comp").get("FrameFormat")
+        fields["height"] = int(comp_format.get("Height"))
+        fields["width"] = int(comp_format.get("Width"))
+        fields["output"] = "output"
 
-        text, ok = QtGui.QInputDialog.getText(self, 'Input Name Dialog', 'Enter output name:')
-        
+        text, ok = QtGui.QInputDialog.getText(
+            self, "Input Name Dialog", "Enter output name:"
+        )
+
         if text and ok:
-            fields['output'] = text
+            fields["output"] = text
 
-        review_template = self.engine.get_template_by_name("fusion_%s_render_mono_%s" % (task_type.lower(), ext_type))
+        review_template = self.engine.get_template_by_name(
+            "fusion_%s_render_mono_%s" % (task_type.lower(), ext_type)
+        )
         output = review_template.apply_fields(fields)
-        output = re.sub(r'%(\d+)d', '', output)
+        output = re.sub(r"%(\d+)d", "", output)
 
-        while not comp.GetAttrs()['COMPB_Locked']:
+        while not comp.GetAttrs()["COMPB_Locked"]:
             comp.Lock()
         saver = comp.Saver({"Clip": output})
         saver.CreateDir = 0
-        saver.SetAttrs({"TOOLS_Name": "shotgun_%s" % ext_type})        
-        while comp.GetAttrs()['COMPB_Locked']:
+        saver.SetAttrs({"TOOLS_Name": "shotgun_%s" % ext_type})
+        while comp.GetAttrs()["COMPB_Locked"]:
             comp.Unlock()
-
 
     def __update_sg_saver(self):
         fusion = bmd.scriptapp("Fusion")
         comp = fusion.GetCurrentComp()
-        path = comp.GetAttrs()['COMPS_FileName']
+        path = comp.GetAttrs()["COMPS_FileName"]
 
         work_template = self.engine.sgtk.template_from_path(path)
-        work_version = work_template.get_fields(path).get('version')
-        
+        work_version = work_template.get_fields(path).get("version")
+
         savers = comp.GetToolList(False, "Saver").values()
 
         saver_names = []
-        while not comp.GetAttrs()['COMPB_Locked']:
+        while not comp.GetAttrs()["COMPB_Locked"]:
             comp.Lock()
         for saver in savers:
-            path = saver.GetAttrs()['TOOLST_Clip_Name'].values()[0]
+            path = saver.GetAttrs()["TOOLST_Clip_Name"].values()[0]
             template = self.engine.sgtk.template_from_path(path)
             if template:
                 fields = template.get_fields(path)
-                template_version = fields.get('version')
+                template_version = fields.get("version")
                 if template_version is not work_version:
-                    fields['version'] = work_version
+                    fields["version"] = work_version
                     saver.Clip = template.apply_fields(fields)
-                    saver_names.append("<b>(%s)</b> form: v%03d to: v%03d<br>" % (saver.GetAttrs("TOOLS_Name"), template_version, work_version))
+                    saver_names.append(
+                        "<b>(%s)</b> form: v%03d to: v%03d<br>"
+                        % (saver.GetAttrs("TOOLS_Name"), template_version, work_version)
+                    )
 
-        while comp.GetAttrs()['COMPB_Locked']:
+        while comp.GetAttrs()["COMPB_Locked"]:
             comp.Unlock()
         if saver_names:
-            QtGui.QMessageBox.information(self, "Shotgun Saver Updater",
+            QtGui.QMessageBox.information(
+                self,
+                "Shotgun Saver Updater",
                 "%s Saver Nodes: <br><br>%s <br><br>"
-                "Have been updated!" % (len(saver_names), "".join(saver_names))
-                )
+                "Have been updated!" % (len(saver_names), "".join(saver_names)),
+            )
         else:
-            QtGui.QMessageBox.information(self, "Shotgun Saver Updater",
-                "No one node have been updated!")
+            QtGui.QMessageBox.information(
+                self, "Shotgun Saver Updater", "No one node have been updated!"
+            )
 
     def verify_fusion(self):
         fusion = bmd.scriptapp("Fusion")
         comp = fusion.GetCurrentComp()
-        fusion_exe = fusion.GetAttrs()['FUSIONS_FileName']
+        fusion_exe = fusion.GetAttrs()["FUSIONS_FileName"]
 
         # Check if are not using FusionRenderNode
-        if not fusion_exe.endswith("FusionRenderNode.exe"): return None
+        if not fusion_exe.endswith("FusionRenderNode.exe"):
+            return None
 
         # TODO: check how to load fusion.exe instead of FusionRenderNode.exe
-        print '{}\n{}\{}'.format(24 * '*', fusion_exe, 24 * '*')
-        subprocess_ = subprocess.Popen(['tasklist'], stdout=subprocess.PIPE)
+        print("{}\n{}\{}".format(24 * "*", fusion_exe, 24 * "*"))
+        subprocess_ = subprocess.Popen(["tasklist"], stdout=subprocess.PIPE)
         output, error = subprocess_.communicate()
-        #print output
+        # print(output)
         target_process = "FusionRenderNode"
         pid = None
         for line in output.splitlines():
-            if not 'FusionRenderNode' in str(line): continue
-            for sub_ in str(line).split(' '):
+            if not "FusionRenderNode" in str(line):
+                continue
+            for sub_ in str(line).split(" "):
                 if sub_.isdigit():
                     pid = int(sub_)
                     break
             break
-    
+
         # if we didn't find the FusionRenderNode process
         # This happen if other process kill the process first
-        if pid is None: return None
+        if pid is None:
+            return None
 
-        #Closing process
+        # Closing process
         try:
             os.kill(pid, 9)
-            logger.debug(' ...Closing FusionRenderNode...')
-            print ' ...Closing FusionRenderNode...'
+            logger.debug(" ...Closing FusionRenderNode...")
+            print(" ...Closing FusionRenderNode...")
             time.sleep(1)
         except:
             time.sleep(1)
-        
-        fusion = bmd.scriptapp("Fusion") # Reload fusion
-        comp = fusion.GetCurrentComp() # Reload comp
-   
 
-        
-
+        fusion = bmd.scriptapp("Fusion")  # Reload fusion
+        comp = fusion.GetCurrentComp()  # Reload comp
