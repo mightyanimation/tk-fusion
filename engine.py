@@ -8,7 +8,7 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
-"""A Fusion engine for Tank.
+"""A Fusion engine for sgtk.
 https://en.wikipedia.org/wiki/Fusion_(software)
 """
 
@@ -21,10 +21,10 @@ import traceback
 
 from functools import wraps
 
-import tank
-from tank.log import LogManager
-from tank.platform import Engine
-from tank.platform.constants import SHOTGUN_ENGINE_NAME
+import sgtk
+from sgtk.log import LogManager
+from sgtk.platform import Engine
+from sgtk.platform.constants import SHOTGUN_ENGINE_NAME
 
 import BlackmagicFusion as bmd
 fusion = bmd.scriptapp("Fusion")
@@ -40,38 +40,38 @@ SHOW_COMP_DLG = "SGTK_COMPATIBILITY_DIALOG_SHOWN"
 
 def show_error(msg):
     t = time.asctime(time.localtime())
-    print("%s - Shotgun Error | Fusion engine | %s " % (t, msg))
+    print("%s - FPT Error | Fusion engine | %s " % (t, msg))
 
 
 def show_warning(msg):
     t = time.asctime(time.localtime())
-    print("%s - Shotgun Error | Fusion engine | %s " % (t, msg))
+    print("%s - FPT Error | Fusion engine | %s " % (t, msg))
 
 
 def show_info(msg):
     t = time.asctime(time.localtime())
-    print("%s - Shotgun Error | Fusion engine | %s " % (t, msg))
+    print("%s - FPT Error | Fusion engine | %s " % (t, msg))
 
 
 def display_error(msg):
     t = time.asctime(time.localtime())
-    print("%s - Shotgun Error | Fusion engine | %s " % (t, msg))
+    print("%s - FPT Error | Fusion engine | %s " % (t, msg))
 
 
 def display_warning(msg):
     t = time.asctime(time.localtime())
-    print("%s - Shotgun Warning | Fusion engine | %s " % (t, msg))
+    print("%s - FPT Warning | Fusion engine | %s " % (t, msg))
 
 
 def display_info(msg):
     t = time.asctime(time.localtime())
-    print("%s - Shotgun Info | Fusion engine | %s " % (t, msg))
+    print("%s - FPT Info | Fusion engine | %s " % (t, msg))
 
 
 def display_debug(msg):
     if os.environ.get("TK_DEBUG") == "1":
         t = time.asctime(time.localtime())
-        print("%s - Shotgun Debug | Fusion engine | %s " % (t, msg))
+        print("%s - FPT Debug | Fusion engine | %s " % (t, msg))
 
 
 
@@ -86,7 +86,7 @@ class FusionEngine(Engine):
         Resources reside in the core/platform/qt folder.
         :return: full path
         """
-        tank_platform_folder = os.path.abspath(inspect.getfile(tank.platform))
+        tank_platform_folder = os.path.abspath(inspect.getfile(sgtk.platform))
         return os.path.join(tank_platform_folder, "qt", filename)
 
     def __toggle_debug_logging(self):
@@ -140,7 +140,7 @@ class FusionEngine(Engine):
         Registers a "Reload and Restart" command with the engine if any
         running apps are registered via a dev descriptor.
         """
-        from tank.platform import restart
+        from sgtk.platform import restart
         self.register_command(
             "Reload and Restart",
             restart,
@@ -224,7 +224,7 @@ class FusionEngine(Engine):
         """
         # unicode characters returned by the shotgun api need to be converted
         # to display correctly in all of the app windows
-        from tank.platform.qt import QtCore
+        from sgtk.platform.qt import QtCore
 
         # tell QT to interpret C strings as utf-8
         utf8 = QtCore.QTextCodec.codecForName("utf-8")
@@ -243,7 +243,7 @@ class FusionEngine(Engine):
         # check that we are running an ok version of fusion
         current_os = sys.platform
         if current_os not in ["mac", "win32", "linux64"]:
-            raise tank.TankError("The current platform is not supported!"
+            raise sgtk.TankError("The current platform is not supported!"
                                  " Supported platforms "
                                  "are Mac, Linux 64 and Windows 64.")
 
@@ -253,7 +253,7 @@ class FusionEngine(Engine):
         if fusion_ver < 9.0:
             msg = ("Shotgun integration is not compatible with Fusion versions"
                    " older than 9")
-            raise tank.TankError(msg)
+            raise sgtk.TankError(msg)
 
         if fusion_ver > 9.0:
             # show a warning that this version of Fusion isn't yet fully tested
