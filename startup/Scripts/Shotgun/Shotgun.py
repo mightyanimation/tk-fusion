@@ -2,7 +2,12 @@ import os
 import re
 import sys
 import sgtk
+import pprint
 import BlackmagicFusion as bmd
+
+pp = pprint.pprint
+pf = pprint.pformat
+
 
 fusion = bmd.scriptapp("Fusion")
 comp = fusion.GetCurrentComp()
@@ -28,34 +33,34 @@ from sgtk.platform.qt import QtGui, QtCore
 
 class Window(QtGui.QWidget):
     """Simple Test"""
-    
+
     def __init__(self):
         super(Window, self).__init__()
         self.setGeometry(50, 50, 300, 300)
         self.setWindowTitle("Shotgun: Manu Pannel")
         self.mainlayout()
-        
+
     def mainlayout(self):
         #######################################
         self.jump_to_sg = QtGui.QAction(self)
         self.jump_to_sg.setText("Jump to Shotgun")
-        self.jump_to_sg.activated.connect(lambda: self._jump_to_sg())
+        self.jump_to_sg.triggered.connect(lambda: self._jump_to_sg())
 
         self.jump_to_fs = QtGui.QAction(self)
         self.jump_to_fs.setText("Jump to File System")
-        self.jump_to_fs.activated.connect(lambda: self._jump_to_fs())
+        self.jump_to_fs.triggered.connect(lambda: self._jump_to_fs())
 
         self.jump_to_rv = QtGui.QAction(self)
         self.jump_to_rv.setText("Jump to Screening Room in RV")
-        self.jump_to_rv.activated.connect(lambda: self.callMenu('Jump to Screening Room in RV'))
+        self.jump_to_rv.triggered.connect(lambda: self.callMenu('Jump to Screening Room in RV'))
 
         self.jump_to_wp = QtGui.QAction(self)
         self.jump_to_wp.setText("Jump to Screening Room Web Player")
-        self.jump_to_wp.activated.connect(lambda: self.callMenu('Jump to Screening Room Web Player'))
+        self.jump_to_wp.triggered.connect(lambda: self.callMenu('Jump to Screening Room Web Player'))
 
         self.work_aria_info = QtGui.QAction(self)
         self.work_aria_info.setText("Work Area Info...")
-        self.work_aria_info.activated.connect(lambda: self.callMenu('Work Area Info...'))
+        self.work_aria_info.triggered.connect(lambda: self.callMenu('Work Area Info...'))
 
         self.context_menu = QtGui.QMenu(self)
         self.context_menu.addAction(self.jump_to_sg)
@@ -92,11 +97,11 @@ class Window(QtGui.QWidget):
         #######################################
         self.snapshot_menu_history = QtGui.QAction(self)
         self.snapshot_menu_history.setText("Snapshot History...")
-        self.snapshot_menu_history.activated.connect(lambda: self.callMenu('Snapshot History...'))
+        self.snapshot_menu_history.triggered.connect(lambda: self.callMenu('Snapshot History...'))
 
         self.snapshot_menu_snapshot = QtGui.QAction(self)
         self.snapshot_menu_snapshot.setText("Snapshot...")
-        self.snapshot_menu_snapshot.activated.connect(lambda: self.callMenu('Snapshot...'))        
+        self.snapshot_menu_snapshot.triggered.connect(lambda: self.callMenu('Snapshot...'))
 
         self.snapshot_menu = QtGui.QMenu(self)
         self.snapshot_menu.addAction(self.snapshot_menu_history)
@@ -113,17 +118,17 @@ class Window(QtGui.QWidget):
         #######################################
         self.shotgun_workfiles_menu_open = QtGui.QAction(self)
         self.shotgun_workfiles_menu_open.setText("File Open...")
-        self.shotgun_workfiles_menu_open.activated.connect(lambda: self.callMenu('File Open...'))
+        self.shotgun_workfiles_menu_open.triggered.connect(lambda: self.callMenu('File Open...'))
 
         self.shotgun_workfiles_menu_save = QtGui.QAction(self)
         self.shotgun_workfiles_menu_save.setText("File Save...")
-        self.shotgun_workfiles_menu_save.activated.connect(lambda: self.callMenu('File Save...'))
+        self.shotgun_workfiles_menu_save.triggered.connect(lambda: self.callMenu('File Save...'))
 
         self.shotgun_workfiles_menu = QtGui.QMenu(self)
         self.shotgun_workfiles_menu.addAction(self.shotgun_workfiles_menu_open)
         self.shotgun_workfiles_menu.addAction(self.shotgun_workfiles_menu_save)
 
-        self.shotgun_workfiles = QtGui.QPushButton("Shotgun Workfiles") 
+        self.shotgun_workfiles = QtGui.QPushButton("Shotgun Workfiles")
         self.shotgun_workfiles.setMenu(self.shotgun_workfiles_menu)
         #######################################
 
@@ -133,19 +138,19 @@ class Window(QtGui.QWidget):
         #######################################
         self.sg_saver_dpx_out = QtGui.QAction(self)
         self.sg_saver_dpx_out.setText("Dpx Output")
-        self.sg_saver_dpx_out.activated.connect(lambda: self.__create_sg_saver('dpx'))
+        self.sg_saver_dpx_out.triggered.connect(lambda: self.__create_sg_saver('dpx'))
 
         self.sg_saver_exr16_out = QtGui.QAction(self)
         self.sg_saver_exr16_out.setText("Exr, 16 bit Output")
-        self.sg_saver_exr16_out.activated.connect(lambda: self.__create_sg_saver('exr'))
+        self.sg_saver_exr16_out.triggered.connect(lambda: self.__create_sg_saver('exr'))
 
         self.sg_saver_pngProxy_out = QtGui.QAction(self)
         self.sg_saver_pngProxy_out.setText("Png, Proxy with Alpha")
-        self.sg_saver_pngProxy_out.activated.connect(lambda: self.__create_sg_saver('png'))
+        self.sg_saver_pngProxy_out.triggered.connect(lambda: self.__create_sg_saver('png'))
 
         self.sg_saver_review_out = QtGui.QAction(self)
         self.sg_saver_review_out.setText("Shotgun Quick Review")
-        self.sg_saver_review_out.activated.connect(lambda: self.__create_sg_saver('mov'))
+        self.sg_saver_review_out.triggered.connect(lambda: self.__create_sg_saver('mov'))
 
         self.shotgun_output_menu = QtGui.QMenu(self)
         self.shotgun_output_menu.addAction(self.sg_saver_dpx_out)
@@ -168,7 +173,7 @@ class Window(QtGui.QWidget):
 
         self.line_context = QtGui.QFrame()
         self.line_context.setFrameShape(QtGui.QFrame.HLine)
-        self.line_context.setFrameShadow(QtGui.QFrame.Sunken)        
+        self.line_context.setFrameShadow(QtGui.QFrame.Sunken)
         qvbox.addWidget(self.line_context)
 
         qvbox.addWidget(self.open)
@@ -183,9 +188,9 @@ class Window(QtGui.QWidget):
 
         qvbox.addWidget(self.load)
         qvbox.addWidget(self.breakdown)
-        
+
         qvbox.addWidget(self.snapshot_button)
-        
+
         qvbox.addWidget(self.pannel)
 
         qvbox.addWidget(self.shotgun_workfiles)
@@ -194,23 +199,23 @@ class Window(QtGui.QWidget):
 
         self.line_tools = QtGui.QFrame()
         self.line_tools.setFrameShape(QtGui.QFrame.HLine)
-        self.line_tools.setFrameShadow(QtGui.QFrame.Sunken)        
+        self.line_tools.setFrameShadow(QtGui.QFrame.Sunken)
         qvbox.addWidget(self.line_tools)
 
         qvbox.addWidget(self.sg_saver)
         qvbox.addWidget(self.sg_saver_update)
-        
+
         # qvbox.insertStretch(2)
         self.setLayout(qvbox)
-                    
+
     def run(self):
         self.show()
-    
+
     def callMenu(self, name):
         for item in engine.commands.items():
             if name in item[0]:
                 item[1].get('callback').__call__()
-        
+
         if name in ["File Open...", "File Save..."]:
             self.context_button.setText(str(engine.context))
 
@@ -260,7 +265,7 @@ class Window(QtGui.QWidget):
         fields['output'] = 'output'
 
         text, ok = QtGui.QInputDialog.getText(self, 'Input Name Dialog', 'Enter output name:')
-        
+
         if text and ok:
             fields['output'] = text
 
@@ -281,7 +286,7 @@ class Window(QtGui.QWidget):
 
         work_template = engine.sgtk.template_from_path(path)
         work_version = work_template.get_fields(path).get('version')
-        
+
         savers = comp.GetToolList(False, "Saver").values()
 
         saver_names = []
@@ -310,4 +315,4 @@ app = QtGui.QApplication.instance()
 wid = Window()
 wid.run()
 
-engine._qt_app.exec_()
+engine._qt_app.exec()
