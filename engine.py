@@ -328,7 +328,7 @@ class FusionEngine(Engine):
             # create our menu handler
             tk_fusion = self.import_module("tk_fusion")
 
-            self.menu_generator = tk_fusion.ShotgunMenu(self)
+            self.menu_generator = tk_fusion.ShotgunMenu(self, self.icon_256)
             self.menu_generator.show()
 
             return True

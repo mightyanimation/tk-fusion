@@ -12,8 +12,9 @@ from sgtk.platform.qt import QtGui, QtCore
 class ShotgunMenu(QtGui.QWidget):
     """Simple Test"""
 
-    def __init__(self, engine):
+    def __init__(self, engine, icon_path):
         self.engine = engine
+        self.icon_path = icon_path
         self.saver_nodes = {}
         # Verify fusion
         self.verify_fusion()
@@ -23,6 +24,8 @@ class ShotgunMenu(QtGui.QWidget):
         #self.setGeometry(50, 50, 260, 100)
         self.setMinimumWidth(250)
         self.setWindowTitle("Shotgun: Menu Panel")
+        icon = QtGui.QIcon(self.icon_path)
+        self.setWindowIcon(icon)
 
         #Global layout
         qvboxLayoutGlobal = QtGui.QVBoxLayout()
