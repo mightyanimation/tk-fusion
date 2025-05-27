@@ -294,8 +294,8 @@ def _session_path():
     comp = fusion.GetCurrentComp()
     path = comp.GetAttrs()['COMPS_FileName']
 
-    if isinstance(path, unicode):
-        path = path.encode("utf-8")
+    # if isinstance(path, unicode):
+    #     path = path.encode("utf-8")
 
     return path
 
@@ -308,7 +308,7 @@ def _save_session(path):
 
     # Ensure that the folder is created when saving
     folder = os.path.dirname(path)
-    ensure_folder_exists(folder)
+    # ensure_folder_exists(folder)
 
     comp = fusion.GetCurrentComp()
     comp.Save(path)
@@ -356,8 +356,8 @@ def _save_as():
     comp = fusion.GetCurrentComp()
     path = comp.GetAttrs()['COMPS_FileName']
 
-    if isinstance(path, unicode):
-        path = path.encode("utf-8")
+    # if isinstance(path, unicode):
+    #     path = path.encode("utf-8")
 
     if path:
         comp.Save(path)

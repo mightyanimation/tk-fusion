@@ -314,6 +314,7 @@ class FusionEngine(Engine):
         if self.get_setting("use_sgtk_as_menu_name", False):
             self._menu_name = "Sgtk"
 
+
     def create_shotgun_menu(self, disabled=False):
         """
         Creates the main shotgun menu in fusion.
@@ -326,11 +327,11 @@ class FusionEngine(Engine):
         if self.has_ui:
             # create our menu handler
             tk_fusion = self.import_module("tk_fusion")
-        #     self._menu_generator = tk_fusion.MenuGenerator(
-        #         self, self._menu_name)
-        #     self._menu_generator.create_menu(disabled=disabled)
-            return True
 
+            self.menu_generator = tk_fusion.ShotgunMenu(self)
+            self.menu_generator.show()
+
+            return True
         return False
 
     def _initialise_qapplication(self):
@@ -382,30 +383,32 @@ class FusionEngine(Engine):
         self.__register_open_log_folder_command()
         self.__register_reload_command()
 
-        # if self.get_setting("automatic_context_switch", True):
-        #     fusion.shotgun._engine_instance = self.instance_name
-        #     fusion.shotgun._menu_name = self._menu_name
-        #     fusion.shotgun._new_context = new_context
+        if self.get_setting("automatic_context_switch", True):
+            # TODO check how to add instance in fusion
+            if 'shotgun' in dir(fusion):
+                fusion.shotgun._engine_instance = self.instance_name
+                fusion.shotgun._menu_name = self._menu_name
+                fusion.shotgun._new_context = new_context
 
-        #     self.logger.debug(
-        #         "Registered new open and save callbacks before "
-        #         "changing context."
-        #     )
+            self.logger.debug(
+                "Registered new open and save callbacks before "
+                "changing context."
+            )
 
-        #     # finally create the menu with the new context if needed
-        #     if old_context != new_context:
-        #         self.create_shotgun_menu()
+            # finally create the menu with the new context if needed
+            if old_context != new_context:
+                self.create_shotgun_menu()
 
     def _run_app_instance_commands(self):
         """
-        Runs the series of app instance commands listed in the 
+        Runs the series of app instance commands listed in the
         'run_at_startup' setting of the environment configuration yaml file.
         """
 
         # Build a dictionary mapping app instance names to dictionaries of
         # commands they registered with the engine.
         app_instance_commands = {}
-        for (cmd_name, value) in self.commands.iteritems():
+        for cmd_name, value in self.commands.items():
             app_instance = value["properties"].get("app")
             if app_instance:
                 # Add entry 'command name: command function' to the command
@@ -434,7 +437,7 @@ class FusionEngine(Engine):
             else:
                 if not setting_cmd_name:
                     # Run all commands of the given app instance.
-                    for (cmd_name, command_function) in cmd_dict.iteritems():
+                    for cmd_name, command_function in cmd_dict.items():
                         msg = ("%s startup running app '%s' command '%s'.",
                                self.name, app_instance_name, cmd_name)
                         self.logger.debug(msg)
@@ -482,29 +485,29 @@ class FusionEngine(Engine):
 
         # first see if pyside2 is present
         try:
-            from PySide2 import QtGui
+            from PySide6 import QtGui
         except:
-            # fine, we don't expect PySide2 to be present just yet
-            self.logger.debug("PySide2 not detected - trying for PySide now...")
+            # fine, we don't expect PySide6 to be present just yet
+            self.logger.debug("PySide6 not detected - trying for PySide now...")
         else:
             # looks like pyside2 is already working! No need to do anything
             self.logger.debug(
-                "PySide2 detected - the existing version will be used."
+                "PySide6 detected - the existing version will be used."
             )
             return
 
-        # then see if pyside is present
+        # then see if pyside2 is present
         try:
-            from PySide import QtGui
+            from PySide2 import QtGui
         except:
-            # must be that a PySide version is not installed,
+            # must be that a PySide2 version is not installed,
             self.logger.debug(
-                "PySide not detected - it will be added to the setup now..."
+                "PySide2 not detected - it will be added to the setup now..."
             )
         else:
             # looks like pyside is already working! No need to do anything
             self.logger.debug(
-                "PySide detected - the existing version will be used."
+                "PySide2 detected - the existing version will be used."
             )
             return
 
@@ -514,7 +517,7 @@ class FusionEngine(Engine):
                                           "/Applications/Shotgun.app")
             sys.path.append(os.path.join(desktop_path, "Contents", "Resources",
                                          "Python", "lib", "python2.7",
-                                         "site-packages"))    
+                                         "site-packages"))
 
         elif current_os == "win32":
             desktop_path = os.environ.get("SHOTGUN_DESKTOP_INSTALL_PATH",
@@ -534,13 +537,22 @@ class FusionEngine(Engine):
 
         # now try to import it
         try:
-            from PySide import QtGui
-        except Exception as exception:
-            traceback.print_exc()
+            from PySide6 import QtGui
+        except Exception as e:
             self.logger.error(
-                "PySide could not be imported! Apps using pyside will not "
-                "operate correctly! Error reported: %s",
-                exception,
+                "PySide6 could not be imported! Apps using pyside will not "
+                "operate correctly! Error reported: {}, full traceback:\n {}".format(
+                    e, traceback.format_exc()
+                )
+            )
+        try:
+            from PySide2 import QtGui
+        except Exception as e:
+            self.logger.error(
+                "PySide2 could not be imported! Apps using pyside will not "
+                "operate correctly! Error reported: {}, full traceback:\n {}".format(
+                    e, traceback.format_exc()
+                )
             )
 
     def _get_dialog_parent(self):
@@ -620,7 +632,67 @@ class FusionEngine(Engine):
                 # the original dialog list.
                 self.logger.debug("Closing dialog %s.", dialog_window_title)
                 dialog.close()
-            except Exception, exception:
+            except Exception as e:
                 traceback.print_exc()
-                self.logger.error("Cannot close dialog %s: %s",
-                                  dialog_window_title, exception)
+                self.logger.error(
+                    "Cannot close dialog {}: {}, full traceback:\n{}".format(
+                        dialog_window_title, e, traceback.format_exc()
+                    )
+                )
+
+    def __update_nodes_version(self, new_path=None):
+        """
+            Update all the saver nodes in the comp.
+            Only if the path correspond to a template.
+        """
+        comp          = fusion.GetCurrentComp()
+        work_path     = comp.GetAttrs()['COMPS_FileName']
+        if new_path is not None:
+            work_path = new_path
+        work_tmpl     = self.sgtk.template_from_path(work_path)
+        if work_tmpl is None:
+            print("__update_nodes_version: Invalid path")
+            return
+        work_fields   = work_tmpl.get_fields(work_path)
+        list_of_tools = comp.GetToolList(False, "Saver") # Only selected:False
+
+        for index, tool in list_of_tools.items ():
+            clip_path = tool.GetAttrs()['TOOLST_Clip_Name'].values()[0]
+
+            # If saver is empty
+            if clip_path in [None, "", " "]:
+                continue
+
+            sg_saver_bool    = tool.GetData("Shotgun_Saver_Node")
+            fields           = None
+            current_template = None
+            new_render_path  = None
+
+            # Validating metadata
+            if sg_saver_bool:
+                template_name    = tool.GetData ("Current_template")
+                current_template = self.sgtk.templates[template_name]
+            else: # Retro compatibility
+                current_template = self.sgtk.template_from_path(clip_path)
+
+            # Avoid savers out of the pipeline
+            if current_template is None:
+                continue
+
+            fields = current_template.get_fields(clip_path)
+
+            # Checking if the template use a version token
+            if not 'version' in fields.keys():
+                continue
+
+            for tool_field in fields.keys():
+                # Update the fields
+                if tool_field in work_fields.keys():
+                    fields[tool_field]=work_fields[tool_field]
+
+            # Updating path from current saver
+            new_render_path  = current_template.apply_fields(fields)
+            tool.Clip        = new_render_path
+
+        comp.Save(work_path)
+        print('Nodes update complete')

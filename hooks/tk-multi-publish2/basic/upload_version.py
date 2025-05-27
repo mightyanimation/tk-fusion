@@ -1,11 +1,11 @@
 # Copyright (c) 2017 Shotgun Software Inc.
-# 
+#
 # CONFIDENTIAL AND PROPRIETARY
-# 
-# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit 
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
 # Source Code License included in this distribution package. See LICENSE.
-# By accessing, using, copying or modifying this work you indicate your 
-# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import os
@@ -194,7 +194,7 @@ class UploadVersionPlugin(HookBaseClass):
         """
 
         self.logger.debug(item.properties.get("path"))
-        
+
         return True
 
     def publish(self, settings, item):
@@ -213,12 +213,12 @@ class UploadVersionPlugin(HookBaseClass):
         fusion = bmd.scriptapp("Fusion")
         comp = fusion.GetCurrentComp()
         first_frame = int(comp.GetAttrs()["COMPN_GlobalStart"])
-        
+
         try:
             seq_data = self.__render_movie_from_sequence(path_to_frames.encode('utf-8'))
         except:
             seq_data = {'path': path_to_frames, 'first_frame': first_frame}
-        
+
         path = seq_data.get('path')
 
         # allow the publish name to be supplied via the item properties. this is
@@ -333,7 +333,7 @@ class UploadVersionPlugin(HookBaseClass):
 
             progressCounter = 0
             for currFrame in range(fs.start(), fs.end()):
-                
+
                 currFile = fs.frame(currFrame)
                 frame = Draft.Image.ReadFromFile( currFile )
 
@@ -346,7 +346,7 @@ class UploadVersionPlugin(HookBaseClass):
                     imgLayer = frame
 
                 lut.Apply( imgLayer )
-                
+
                 encoder.EncodeNextFrame( imgLayer )
 
                 progressCounter = progressCounter + 1

@@ -1,0 +1,3 @@
+if composition == nil then
+    fusion:RunScript("Scripts:Shotgun/Shotgun.py")
+end
