@@ -5,10 +5,7 @@
  
     Before 'Help'
     {
-      Sub 'Shotgun'
-      {
-        'RunScript  { Name = "Shotgun", id = "Overlay", filename = [[ Scripts:Shotgun/Shotgun.py ]] }'
-      },
+      
     },
   },
 }

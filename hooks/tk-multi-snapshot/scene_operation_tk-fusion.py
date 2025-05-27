@@ -10,9 +10,9 @@
 
 import os
 
-import tank
-from tank import Hook
-from tank import TankError
+import sgtk
+from sgtk import Hook
+from sgtk import TankError
 
 import BlackmagicFusion as bmd
 fusion = bmd.scriptapp("Fusion")
@@ -24,7 +24,7 @@ __email__ = "diegogh2000@gmail.com"
 
 class SceneOperation(Hook):
     """
-    Hook called to perform an operation with the 
+    Hook called to perform an operation with the
     current scene
     """
 

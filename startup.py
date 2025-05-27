@@ -69,32 +69,45 @@ class FusionLauncher(SoftwareLauncher):
         required_env = {}
 
         current_os = sys.platform.lower()
-        
+
         if current_os == "darwin":
-            python_path = os.environ.get("SHOTGUN_DESKTOP_INSTALL_PATH",
-                                          "/Applications/Shotgun.app/Python")
+            python_path = os.environ.get(
+                "SHOTGUN_DESKTOP_INSTALL_PATH",
+                "/Applications/Shotgun.app/Python3"
+            )
             fusion_home = "/Library/Application Support/Blackmagic Design/Fusion"
-        
+            fusion_data_home = "{}/Blackmagic Design/Fusion".format(os.environ["HOME"])
+
         elif current_os == "win32":
-            python_path = os.environ.get("SHOTGUN_DESKTOP_INSTALL_PATH",
-                                          "C:/Program Files/Shotgun/Python")
+            python_path = os.environ.get(
+                "SHOTGUN_DESKTOP_INSTALL_PATH",
+                "C:/Program Files/Shotgun/Python3"
+            )
             fusion_home = "C:/ProgramData/Blackmagic Design/Fusion"
+            fusion_data_home = "{}\\Blackmagic Design\\Fusion".format(os.environ["appdata"])
 
-        elif current_os == "linux2":
-            python_path = os.environ.get("SHOTGUN_DESKTOP_INSTALL_PATH",
-                                          "/opt/Shotgun/Shotgun/Python")
-            fusion_home = "/var/BlackmagicDesign/Fusion"
- 
+        elif current_os == "linux":
+            python_path = os.environ.get(
+                "SHOTGUN_DESKTOP_INSTALL_PATH",
+                "/opt/Shotgun/Shotgun/Python3"
+            )
+            fusion_home = "/opt/BlackmagicDesign/Fusion"
+            fusion_data_home = "{}/Blackmagic Design/Fusion".format(os.environ["HOME"])
+
         # Copy Fusion Startup modules to right folder
-        copy_folder(os.path.join(self.disk_location, "startup"), fusion_home)
+        # copy_folder(os.path.join(self.disk_location, "startup"), fusion_home)
+        copy_folder(os.path.join(self.disk_location, "startup"), fusion_data_home)
 
-        sgtk.util.append_path_to_env_var(
-             "FUSION_PYTHON27_HOME", python_path)
+
+        fusion_python_env = "PYTHON3HOME"
+        self.logger.info("Setting {} to {}".format(fusion_python_env, python_path))
+        # sgtk.util.append_path_to_env_var("FUSION_PYTHON27_HOME", python_path)
+        # sgtk.util.append_path_to_env_var("PYTHONHOME", python_path)
+        sgtk.util.append_path_to_env_var(fusion_python_env, python_path)
 
         # Prepare the launch environment with variables required by the
         # classic bootstrap approach.
-        self.logger.debug(
-            "Preparing Fusion Launch via Toolkit Classic methodology ...")
+        self.logger.debug("Preparing Fusion Launch via Toolkit Classic methodology ...")
         required_env["SGTK_ENGINE"] = self.engine_name
         required_env["SGTK_CONTEXT"] = sgtk.context.serialize(self.context)
 
@@ -143,6 +156,7 @@ class FusionLauncher(SoftwareLauncher):
         """
         Find executables in the default install locations.
         """
+
 
         # all the executable templates for the current OS
         executable_templates = self.EXECUTABLE_TEMPLATES.get(sys.platform, [])

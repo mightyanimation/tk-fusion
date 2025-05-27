@@ -1,11 +1,11 @@
 ﻿# Copyright (c) 2017 Shotgun Software Inc.
-# 
+#
 # CONFIDENTIAL AND PROPRIETARY
-# 
-# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit 
+#
+# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
 # Source Code License included in this distribution package. See LICENSE.
-# By accessing, using, copying or modifying this work you indicate your 
-# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
+# By accessing, using, copying or modifying this work you indicate your
+# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 import glob
@@ -78,8 +78,8 @@ class FusionSessionCollector(HookBaseClass):
 
         # create an item representing the current fusion session
         item = self.collect_current_fusion_session(settings, parent_item)
-        
-        self.collect_sg_savernodes(item)
+
+        #self.collect_sg_savernodes(item)
 
     def collect_current_fusion_session(self, settings, parent_item):
         """
@@ -158,7 +158,7 @@ class FusionSessionCollector(HookBaseClass):
             if template:
                 fields = template.get_fields(path)
                 template_version = fields.get('version')
-                if template_version is work_version:                
+                if template_version is work_version:
                     frames = template.apply_fields(fields)
                     base, ext = os.path.splitext(frames)
                     if '.mov' not in ext:
@@ -182,11 +182,11 @@ def _session_path():
     :return:
     """
     comp = fusion.GetCurrentComp()
-    
+
     path = comp.GetAttrs()['COMPS_FileName']
 
-    if isinstance(path, unicode):
-        path = path.encode("utf-8")
+    # if isinstance(path, unicode):
+    #     path = path.encode("utf-8")
 
     return path
 

@@ -9,7 +9,7 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 """
-Hook that loads defines all the available actions, broken down by publish type. 
+Hook that loads defines all the available actions, broken down by publish type.
 """
 
 import os
@@ -17,6 +17,7 @@ import re
 import glob
 import sgtk
 from sgtk.errors import TankError
+import traceback
 
 
 HookBaseClass = sgtk.get_hook_baseclass()
@@ -28,7 +29,7 @@ class FusionActions(HookBaseClass):
     def generate_actions(self, sg_publish_data, actions, ui_area):
         """
         Returns a list of action instances for a particular publish.
-        This method is called each time a user clicks a publish somewhere in 
+        This method is called each time a user clicks a publish somewhere in
         the UI.
         The data returned from this hook will be used to populate the actions
         menu for a publish.
@@ -50,12 +51,12 @@ class FusionActions(HookBaseClass):
         for this publish.
 
         The ui_area parameter is a string and indicates where the publish is to
-        be shown. 
-        - If it will be shown in the main browsing area, "main" is passed. 
+        be shown.
+        - If it will be shown in the main browsing area, "main" is passed.
         - If it will be shown in the details area, "details" is passed.
-        - If it will be shown in the history area, "history" is passed. 
+        - If it will be shown in the history area, "history" is passed.
 
-        Please note that it is perfectly possible to create more than one 
+        Please note that it is perfectly possible to create more than one
         action "instance" for an action! You can for example do scene
         introspection - if the action passed in is "character_attachment"
         you may for example scan the scene, figure out all the nodes
@@ -89,6 +90,21 @@ class FusionActions(HookBaseClass):
                                                      "node to the current "
                                                      "scene.")})
 
+        if "ensure_local" in actions:
+            action_instances.append({"name": "ensure_local",
+                                     "params": None,
+                                     "caption": "Download",
+                                     "description": ("This will very if the file"
+                                                     "exists, if not then "
+                                                     "it will be downloaded.")})
+
+        if "copy_path" in actions:
+            action_instances.append({"name": "copy_path",
+                                     "params": None,
+                                     "caption": "Copy path",
+                                     "description": ("This will copy the publish "
+                                                     " path into the clipboard.")})
+
         return action_instances
 
     def execute_multiple_actions(self, actions):
@@ -107,7 +123,7 @@ class FusionActions(HookBaseClass):
             params: Parameters passed down from the generate_actions hook.
 
         .. note::
-            This is the default entry point for the hook. It reuses the 
+            This is the default entry point for the hook. It reuses the
             ``execute_action`` method for backward compatibility with hooks
             written for the previous version of the loader.
 
@@ -149,9 +165,31 @@ class FusionActions(HookBaseClass):
         # unicode so convert the path to ensure filenames containing complex
         # characters are supported
         path = self.get_publish_path(sg_publish_data).replace(os.path.sep, "/")
-
+        localfile_bool = False
         if name == "read_node":
+            folder_path = os.path.dirname(path)
+            file_name = path.split('/')[-1] if '/' in path else path.split(os.sep())[-1]
+            file_info = file_name.split('.')
+            for f in os.listdir(folder_path):
+                if os.path.isfile(os.path.join(folder_path, f)):
+                    if f == file_name:
+                        localfile_bool = True
+                        break
+
+                    current_info = f.split('.')
+                    if file_info[0] == current_info[0] and file_info[-1] == current_info[-1]:
+                        localfile_bool = True
+                        break
+
+            if not localfile_bool:
+                self._ensure_file_is_local(path, sg_publish_data)
             self._create_read_node(path, sg_publish_data)
+
+        if name == "ensure_local":
+            self._ensure_file_is_local(path, sg_publish_data)
+
+        if name == "copy_path":
+            self._copy_publish_path(path)
 
     # helper methods which can be subclassed in custom hooks to fine tune the
     # behaviour of things
@@ -172,14 +210,14 @@ class FusionActions(HookBaseClass):
 
         (_, ext) = os.path.splitext(path)
 
-        valid_extensions = [".png", 
-                            ".jpg", 
-                            ".jpeg", 
-                            ".exr", 
-                            ".cin", 
-                            ".dpx", 
-                            ".tiff", 
-                            ".tif", 
+        valid_extensions = [".png",
+                            ".jpg",
+                            ".jpeg",
+                            ".exr",
+                            ".cin",
+                            ".dpx",
+                            ".tiff",
+                            ".tif",
                             ".mov",
                             ".mp4",
                             ".psd",
@@ -198,15 +236,57 @@ class FusionActions(HookBaseClass):
         if seq_range:
             # override the detected frame range.
             path = path % seq_range[0]
-            loader = comp.Loader({"Clip": path})
-            loader.GlobalIn = seq_range[0]
-            loader.GlobalOut = seq_range[1]
-            loader.ClipTimeStart = 0            
+            trim_out = int(seq_range[1]) - int(seq_range[0])
+            globalStart = comp.GetAttrs("COMPN_GlobalStart")
+            comp.Lock(); loader = comp.Loader({"Clip": path.replace('/', '\\')})
+            node_name = path.split('/')[-1].split(".")[0]
+            load_data = {
+                "TOOLS_Name": node_name,
+                "TOOLB_NameSet": True
+                }
+            loader.SetAttrs(load_data)
+            loader.GlobalIn = globalStart
+            loader.GlobalOut = globalStart + trim_out
+            loader.ClipTimeStart = 0
+            loader.ClipTimeEnd = trim_out
+            loader.TrimOut = trim_out
         else:
-            comp.Loader({"Clip": path})
+            comp.Lock(); comp.Loader({"Clip": path.replace('/', '\\')})
         comp.Unlock()
 
 
+    def _ensure_file_is_local(self, path, published_file):
+        """
+        Given a PublishedFile entity dictionary and a path
+        It will attempt to download the file if it is not already downloaded.
+        :param path:
+        :param published_file:
+        :return:
+        """
+        self._find_sequence_range(path)
+
+        if not hasattr(self, 'metasync'):
+            self.metasync = \
+                self.load_framework("mty-framework-metasync")
+
+        transfersManager = self.metasync.transfersManager
+        if "%" in path:
+            dirname = os.path.dirname(path)
+            if os.path.exists(dirname) and \
+                    self._collect_sequenced_files(path):
+                transfersManager \
+                    .ensure_local_dependencies(published_file)
+                return path
+        else:
+            if os.path.exists(path):
+                transfersManager \
+                    .ensure_local_dependencies(published_file)
+                return path
+
+        transfersManager.ensure_file_is_local(path, published_file)
+        transfersManager.ensure_local_dependencies(published_file)
+
+        return path
 
 
     def _sequence_range_from_path(self, path):
@@ -265,7 +345,7 @@ class FusionActions(HookBaseClass):
         """
         Helper method attempting to extract sequence information.
 
-        Using the toolkit template system, the path will be probed to 
+        Using the toolkit template system, the path will be probed to
         check if it is a sequence, and if so, frame information is
         attempted to be extracted.
 
@@ -305,3 +385,29 @@ class FusionActions(HookBaseClass):
 
         # return the range
         return (min(frames), max(frames))
+
+    def _collect_sequenced_files(self, sequence_path):
+        folder_path = os.path.dirname(sequence_path)
+        name, ext = os.path.splitext(sequence_path)
+        folder_files = os.listdir(folder_path)
+        sequence_files = []
+
+        if len(folder_files) > 0:
+            for file in sorted(folder_files):
+                if file.endswith(ext):
+                    path = os.path.join(folder_path, file)
+                    sequence_files.append(path)
+
+        return sequence_files
+
+    def _copy_publish_path(self, path):
+        import os
+        import sys
+        python_modules_path = os.path.join(
+            os.path.dirname(self.disk_location), "external_python_modules")
+        print(30 * '*')
+        print(python_modules_path)
+        print(30 * '*')
+        sys.path.append(python_modules_path)
+        import pyperclip
+        pyperclip.copy(path)
