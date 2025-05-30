@@ -15,6 +15,7 @@ Hook that loads defines all the available actions, broken down by publish type.
 import os
 import re
 import glob
+import fileseq
 import sgtk
 from sgtk.errors import TankError
 import traceback
@@ -75,35 +76,50 @@ class FusionActions(HookBaseClass):
          description
         """
         app = self.parent
-        app.log_debug("Generate actions called for UI element %s. "
-                      "Actions: %s. Publish Data: %s" % (ui_area,
-                                                         actions,
-                                                         sg_publish_data))
+        engine = app.engine
+        logger = engine.logger
+
+        logger.info(
+            (
+                "Generate actions called for UI element {}. "
+                "Actions: {}. Publish Data: {}"
+            ).format(ui_area, actions, sg_publish_data)
+        )
 
         action_instances = []
 
-        if "read_node" in actions:
-            action_instances.append({"name": "read_node",
-                                     "params": None,
-                                     "caption": "Create Read Node",
-                                     "description": ("This will add a read "
-                                                     "node to the current "
-                                                     "scene.")})
+        if "loader_node" in actions:
+            action_instances.append(
+                {
+                    "name": "loader_node",
+                    "params": None,
+                    "caption": "Create Loader Node",
+                    "description": "This will add a loader node to the current scene.",
+                }
+            )
 
         if "ensure_local" in actions:
-            action_instances.append({"name": "ensure_local",
-                                     "params": None,
-                                     "caption": "Download",
-                                     "description": ("This will very if the file"
-                                                     "exists, if not then "
-                                                     "it will be downloaded.")})
+            action_instances.append(
+                {
+                    "name": "ensure_local",
+                    "params": None,
+                    "caption": "Download",
+                    "description": (
+                        "This will very if the file exists in the local file system, "
+                        "if not, it will be downloaded."
+                    ),
+                }
+            )
 
         if "copy_path" in actions:
-            action_instances.append({"name": "copy_path",
-                                     "params": None,
-                                     "caption": "Copy path",
-                                     "description": ("This will copy the publish "
-                                                     " path into the clipboard.")})
+            action_instances.append(
+                {
+                    "name": "copy_path",
+                    "params": None,
+                    "caption": "Copy path",
+                    "description": "This will copy the publish path into the clipboard.",
+                }
+            )
 
         return action_instances
 
@@ -134,13 +150,34 @@ class FusionActions(HookBaseClass):
         :param list actions: Action dictionaries.
         """
         app = self.parent
+        engine = app.engine
+        logger = engine.logger
+
         for single_action in actions:
-            app.log_debug("Single Action: %s" % single_action)
+            logger.info("Single Action: %s" % single_action)
             name = single_action["name"]
             sg_publish_data = single_action["sg_publish_data"]
             params = single_action["params"]
 
-            self.execute_action(name, params, sg_publish_data)
+            try:
+                self.execute_action(name, params, sg_publish_data)
+                # play sound from config hook 'play_sounds'
+                logger.info("Playing sound, reached end of execute_action")
+                engine.execute_hook_expression(
+                    "{config}/notifications.py",
+                    "success_sound",
+                )
+            except Exception as e:
+                msg = "Error executing action {}: {}, full traceback:\n{}".format(
+                    name, e, traceback.format_exc()
+                )
+                engine.logger.error(msg)
+                # play sound from config hook 'play_sounds'
+                logger.info("Playing sound, error raised in execute_action")
+                engine.execute_hook_expression(
+                    "{config}/notifications.py",
+                    "error_sound",
+                )
 
     def execute_action(self, name, params, sg_publish_data):
         """
@@ -155,38 +192,26 @@ class FusionActions(HookBaseClass):
         :returns: No return value expected.
         """
         app = self.parent
-        app.log_debug("Execute action called for action %s. "
-                      "Parameters: %s. Publish Data: %s" % (name,
-                                                            params,
-                                                            sg_publish_data))
+        engine = app.engine
+        logger = engine.logger
+
+        logger.info(
+            (
+                "Execute action called for action {}. Parameters: {}. "
+                "Publish Data: {}"
+            ).format(name, params, sg_publish_data)
+        )
 
         # resolve path
-        # toolkit uses utf-8 encoded strings internally and Natron API expects
-        # unicode so convert the path to ensure filenames containing complex
-        # characters are supported
-        path = self.get_publish_path(sg_publish_data).replace(os.path.sep, "/")
-        localfile_bool = False
-        if name == "read_node":
-            folder_path = os.path.dirname(path)
-            file_name = path.split('/')[-1] if '/' in path else path.split(os.sep())[-1]
-            file_info = file_name.split('.')
-            for f in os.listdir(folder_path):
-                if os.path.isfile(os.path.join(folder_path, f)):
-                    if f == file_name:
-                        localfile_bool = True
-                        break
+        path = self.get_publish_path(sg_publish_data)
+        path = self.fix_path(path)
 
-                    current_info = f.split('.')
-                    if file_info[0] == current_info[0] and file_info[-1] == current_info[-1]:
-                        localfile_bool = True
-                        break
-
-            if not localfile_bool:
-                self._ensure_file_is_local(path, sg_publish_data)
-            self._create_read_node(path, sg_publish_data)
+        if name == "loader_node":
+            self.ensure_file_is_local(path, sg_publish_data)
+            self._create_loader_node(path, sg_publish_data)
 
         if name == "ensure_local":
-            self._ensure_file_is_local(path, sg_publish_data)
+            self.ensure_file_is_local(path, sg_publish_data)
 
         if name == "copy_path":
             self._copy_publish_path(path)
@@ -194,14 +219,17 @@ class FusionActions(HookBaseClass):
     # helper methods which can be subclassed in custom hooks to fine tune the
     # behaviour of things
 
-    def _create_read_node(self, path, sg_publish_data):
+    def _create_loader_node(self, path, sg_publish_data):
         """
-        Create a read node representing the publish.
+        Create a loader node representing the publish.
 
         :param path: Path to file.
         :param sg_publish_data: Shotgun data dictionary with all the standard
                                 publish fields.
         """
+        app = self.parent
+        engine = app.engine
+        logger = engine.logger
 
         import BlackmagicFusion as bmd
 
@@ -210,204 +238,161 @@ class FusionActions(HookBaseClass):
 
         (_, ext) = os.path.splitext(path)
 
-        valid_extensions = [".png",
-                            ".jpg",
-                            ".jpeg",
-                            ".exr",
-                            ".cin",
-                            ".dpx",
-                            ".tiff",
-                            ".tif",
-                            ".mov",
-                            ".mp4",
-                            ".psd",
-                            ".tga",
-                            ".ari",
-                            ".gif",
-                            ".iff"]
+        valid_extensions = [
+            ".png",
+            ".jpg",
+            ".jpeg",
+            ".exr",
+            ".cin",
+            ".dpx",
+            ".tiff",
+            ".tif",
+            ".mov",
+            ".mp4",
+            ".psd",
+            ".tga",
+            ".ari",
+            ".gif",
+            ".iff",
+        ]
 
         if ext.lower() not in valid_extensions:
-            raise Exception("Unsupported file extension for '%s'!" % path)
+            msg = "Unsupported file extension for '{}'!".format(path)
+            logger.error(msg)
+            raise Exception(msg)
 
         # find the sequence range if it has one:
         seq_range = self._find_sequence_range(path)
 
-        comp.Lock()
+        while not comp.GetAttrs()["COMPB_Locked"]:
+            comp.Lock()
+
+        path = path % seq_range[0]
+        path = self.fix_path(path)
+        node_name = os.path.basename(path).split(".")[0]
+        load_data = {
+            "TOOLS_Name": node_name,
+            "TOOLB_NameSet": True,
+        }
+
+        x_pos, y_pos = self.get_good_position(comp)
+        logger.info("good position, x: {}, y: {}".format(x_pos, y_pos))
+        loader = comp.AddTool("Loader", x_pos, y_pos)
+        loader.Clip = path
+        loader.SetAttrs(load_data)
+
         if seq_range:
             # override the detected frame range.
-            path = path % seq_range[0]
             trim_out = int(seq_range[1]) - int(seq_range[0])
             globalStart = comp.GetAttrs("COMPN_GlobalStart")
-            comp.Lock(); loader = comp.Loader({"Clip": path.replace('/', '\\')})
-            node_name = path.split('/')[-1].split(".")[0]
-            load_data = {
-                "TOOLS_Name": node_name,
-                "TOOLB_NameSet": True
-                }
-            loader.SetAttrs(load_data)
             loader.GlobalIn = globalStart
             loader.GlobalOut = globalStart + trim_out
             loader.ClipTimeStart = 0
             loader.ClipTimeEnd = trim_out
             loader.TrimOut = trim_out
-        else:
-            comp.Lock(); comp.Loader({"Clip": path.replace('/', '\\')})
-        comp.Unlock()
 
+        metadata_ = {}
+        meta_keys = ["version_number", "code", "name", "id", "entity"]
+        if sg_publish_data is not None:
+            for k, val in sg_publish_data.items():
+                if k in meta_keys:
+                    metadata_[k] = val
 
-    def _ensure_file_is_local(self, path, published_file):
-        """
-        Given a PublishedFile entity dictionary and a path
-        It will attempt to download the file if it is not already downloaded.
-        :param path:
-        :param published_file:
-        :return:
-        """
-        self._find_sequence_range(path)
+        loader.SetData("sg_metadata", metadata_)
 
-        if not hasattr(self, 'metasync'):
-            self.metasync = \
-                self.load_framework("mty-framework-metasync")
-
-        transfersManager = self.metasync.transfersManager
-        if "%" in path:
-            dirname = os.path.dirname(path)
-            if os.path.exists(dirname) and \
-                    self._collect_sequenced_files(path):
-                transfersManager \
-                    .ensure_local_dependencies(published_file)
-                return path
-        else:
-            if os.path.exists(path):
-                transfersManager \
-                    .ensure_local_dependencies(published_file)
-                return path
-
-        transfersManager.ensure_file_is_local(path, published_file)
-        transfersManager.ensure_local_dependencies(published_file)
-
-        return path
-
-
-    def _sequence_range_from_path(self, path):
-        """
-        Parses the file name in an attempt to determine the first and last
-        frame number of a sequence. This assumes some sort of common convention
-        for the file names, where the frame number is an integer at the end of
-        the basename, just ahead of the file extension, such as
-        file.0001.jpg, or file_001.jpg. We also check for input file names with
-        abstracted frame number tokens, such as file.####.jpg, or file.%04d.jpg.
-
-        :param str path: The file path to parse.
-
-        :returns: None if no range could be determined, otherwise (min, max)
-        :rtype: tuple or None
-        """
-        # This pattern will match the following at the end of a string and
-        # retain the frame number or frame token as group(1) in the resulting
-        # match object:
-        #
-        # 0001
-        # ####
-        # %04d
-        #
-        # The number of digits or hashes does not matter; we match as many as
-        # exist.
-        frame_pattern = re.compile(r"([0-9#]+|[%]0\dd)$")
-        root, ext = os.path.splitext(path)
-        match = re.search(frame_pattern, root)
-
-        # If we did not match, we don't know how to parse the file name, or
-        # there is no frame number to extract.
-        if not match:
-            return None
-
-        # We need to get all files that match the pattern from disk so that we
-        # can determine what the min and max frame number is.
-        glob_path = "%s%s" % (
-            re.sub(frame_pattern, "*", root),
-            ext,
-        )
-        files = glob.glob(glob_path)
-
-        # Our pattern from above matches against the file root, so we need
-        # to chop off the extension at the end.
-        file_roots = [os.path.splitext(f)[0] for f in files]
-
-        # We know that the search will result in a match at this point,.
-        # otherwise the glob wouldn't have found the file. We can search and
-        # pull group 1 to get the integer frame number from the file root name.
-        frames = [int(re.search(frame_pattern, f).group(1))
-                  for f in file_roots]
-        return (min(frames), max(frames))
+        while comp.GetAttrs()["COMPB_Locked"]:
+            comp.Unlock()
 
     def _find_sequence_range(self, path):
         """
-        Helper method attempting to extract sequence information.
+        Find the sequence range of a given path using fileseq.
 
-        Using the toolkit template system, the path will be probed to
-        check if it is a sequence, and if so, frame information is
-        attempted to be extracted.
-
-        :param path: Path to file on disk.
-        :returns: None if no range could be determined, otherwise (min, max)
+        :param path: Path to check
+        :return: A tuple of two integers representing the start and end of the
+                 sequence. If no sequence is detected, returns None.
         """
-        # find a template that matches the path:
-        template = None
+        app = self.parent
+        engine = app.engine
+        logger = engine.logger
+
         try:
-            template = self.parent.sgtk.template_from_path(path)
-        except sgtk.TankError:
-            pass
-
-        if not template:
-            # If we don't have a template to take advantage of, then
-            # we are forced to do some rough parsing ourself to try
-            # to determine the frame range.
-            return self._sequence_range_from_path(path)
-
-        # get the fields and find all matching files:
-        fields = template.get_fields(path)
-        if not "SEQ" in fields:
+            fileseq_obj = fileseq.findSequenceOnDisk(path)
+        except Exception as e:
+            logger.error(
+                "Failed to find sequence on disk: {}, full traceback:\n{}".format(
+                    e, traceback.format_exc()
+                )
+            )
             return None
 
-        files = self.parent.sgtk.paths_from_template(
-            template, fields, ["SEQ", "eye"])
-
-        # find frame numbers from these files:
-        frames = []
-        for file in files:
-            fields = template.get_fields(file)
-            frame = fields.get("SEQ")
-            if frame != None:
-                frames.append(frame)
-        if not frames:
+        if not fileseq_obj:
             return None
 
-        # return the range
-        return (min(frames), max(frames))
-
-    def _collect_sequenced_files(self, sequence_path):
-        folder_path = os.path.dirname(sequence_path)
-        name, ext = os.path.splitext(sequence_path)
-        folder_files = os.listdir(folder_path)
-        sequence_files = []
-
-        if len(folder_files) > 0:
-            for file in sorted(folder_files):
-                if file.endswith(ext):
-                    path = os.path.join(folder_path, file)
-                    sequence_files.append(path)
-
-        return sequence_files
+        return (fileseq_obj.start(), fileseq_obj.end())
 
     def _copy_publish_path(self, path):
-        import os
-        import sys
-        python_modules_path = os.path.join(
-            os.path.dirname(self.disk_location), "external_python_modules")
-        print(30 * '*')
-        print(python_modules_path)
-        print(30 * '*')
-        sys.path.append(python_modules_path)
+        """
+        Copy the publish path to the clipboard.
+
+        :param path: The path to copy to the clipboard
+        :return: None
+        """
         import pyperclip
+
         pyperclip.copy(path)
+
+    def get_good_position(self, comp, x_offset=0, y_offset=3):
+        """
+        Finds a good position to create a new node in the flow view of the
+        given comp. A good position is one that is not occupied by any other
+        node. The position is calculated by finding the node with the highest
+        x and y coordinates and then adding an offset to it. The offset is
+        applied to both the x and y axes. The x axis offset is increased by
+        half the width of a tool node to avoid overlapping.
+
+        :param comp: The comp object to query
+        :param x_offset: The offset to apply to the x axis
+        :param y_offset: The offset to apply to the y axis
+        :return: A tuple of two floats representing the x and y coordinates of
+                 the good position
+        """
+        # when the position of a node is queried, it returns the coordinates of the
+        # top left corner, but when a new node is created, the coordinates are applied
+        # to the center of the node, thus we need to offset at least the x axis
+        x_tool_width_offset = 0.5
+        flow = comp.CurrentFrame.FlowView
+        max_x = None
+        max_y = None
+
+        for tool in comp.GetToolList(False).values():
+            pos = flow.GetPosTable(tool)
+            if not pos:
+                continue
+            x = pos.get(1)
+            y = pos.get(2)
+
+            # store higest values
+            if max_x is None:
+                max_x = x
+            elif x > max_x:
+                max_x = x
+
+            if max_y is None:
+                max_y = y
+            elif y > max_y:
+                max_y = y
+
+        # apply the offsets
+        max_x += x_tool_width_offset
+        max_x += x_offset
+        max_y += y_offset
+
+        return max_x, max_y
+
+    def fix_path(self, path):
+        """Replace all backward slashes with forward slashes."""
+
+        path = path.replace("\\\\", "/")
+        path = path.replace("\\", "/")
+
+        return path
