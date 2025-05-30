@@ -101,11 +101,7 @@ settings.tk-fusion.shot_step:
       location: "@apps.tk-multi-about.location"
     tk-multi-breakdown: "@settings.tk-multi-breakdown.fusion"
     tk-multi-setframerange:
-      location:
-        type: git_branch
-        branch: enable_hooks_for_app
-        path: https://github.com/diegogarciahuerta/tk-multi-setframerange
-        version: b24a977
+      location: "@apps.tk-multi-setframerange.location"
       hook_frame_operation: "{engine}/tk-multi-setframerange/frame_operations_tk-fusion.py"
     tk-multi-loader2: "@settings.tk-multi-loader2.fusion"
     tk-multi-publish2: "@settings.tk-multi-publish2.fusion.shot_step"
