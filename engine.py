@@ -40,38 +40,38 @@ SHOW_COMP_DLG = "SGTK_COMPATIBILITY_DIALOG_SHOWN"
 
 def show_error(msg):
     t = time.asctime(time.localtime())
-    print("%s - Shotgun Error | Fusion engine | %s " % (t, msg))
+    print("%s - Shotgrid Error | Fusion engine | %s " % (t, msg))
 
 
 def show_warning(msg):
     t = time.asctime(time.localtime())
-    print("%s - Shotgun Error | Fusion engine | %s " % (t, msg))
+    print("%s - Shotgrid Error | Fusion engine | %s " % (t, msg))
 
 
 def show_info(msg):
     t = time.asctime(time.localtime())
-    print("%s - Shotgun Error | Fusion engine | %s " % (t, msg))
+    print("%s - Shotgrid Error | Fusion engine | %s " % (t, msg))
 
 
 def display_error(msg):
     t = time.asctime(time.localtime())
-    print("%s - Shotgun Error | Fusion engine | %s " % (t, msg))
+    print("%s - Shotgrid Error | Fusion engine | %s " % (t, msg))
 
 
 def display_warning(msg):
     t = time.asctime(time.localtime())
-    print("%s - Shotgun Warning | Fusion engine | %s " % (t, msg))
+    print("%s - Shotgrid Warning | Fusion engine | %s " % (t, msg))
 
 
 def display_info(msg):
     t = time.asctime(time.localtime())
-    print("%s - Shotgun Info | Fusion engine | %s " % (t, msg))
+    print("%s - Shotgrid Info | Fusion engine | %s " % (t, msg))
 
 
 def display_debug(msg):
     if os.environ.get("TK_DEBUG") == "1":
         t = time.asctime(time.localtime())
-        print("%s - Shotgun Debug | Fusion engine | %s " % (t, msg))
+        print("%s - Shotgrid Debug | Fusion engine | %s " % (t, msg))
 
 
 
@@ -140,7 +140,7 @@ class FusionEngine(Engine):
         Registers a "Reload and Restart" command with the engine if any
         running apps are registered via a dev descriptor.
         """
-        from tank.platform import restart
+        from sgtk.platform import restart
         self.register_command(
             "Reload and Restart",
             restart,
@@ -207,7 +207,7 @@ class FusionEngine(Engine):
 
         except Exception:
             traceback.print_exc()
-            self.logger.warning("Could not install Shotgun cacert.txt"
+            self.logger.warning("Could not install Shotgrid cacert.txt"
                                 " certificate due to the following exception:"
                                 " ")
 
@@ -251,14 +251,14 @@ class FusionEngine(Engine):
         fusion_ver = float(".".join(fusion_build_version.split(".")[:2]))
 
         if fusion_ver < 9.0:
-            msg = ("Shotgun integration is not compatible with Fusion versions"
+            msg = ("Shotgrid integration is not compatible with Fusion versions"
                    " older than 9")
             raise tank.TankError(msg)
 
         if fusion_ver > 9.0:
             # show a warning that this version of Fusion isn't yet fully tested
-            # with Shotgun:
-            msg = ("The Shotgun Pipeline Toolkit has not yet been fully "
+            # with Shotgrid:
+            msg = ("The Shotgrid Pipeline Toolkit has not yet been fully "
                    "tested with Fusion %s.  "
                    "You can continue to use Toolkit but you may experience "
                    "bugs or instability."
@@ -362,10 +362,11 @@ class FusionEngine(Engine):
 
         # for some readon this engine command get's lost so we add it back
         self.__register_reload_command()
-        self.create_shotgun_menu()
-
         # Run a series of app instance commands at startup.
         self._run_app_instance_commands()
+
+        # create the floating menu
+        self.create_shotgun_menu()
 
         # self._qt_app.exec_()
 
@@ -469,6 +470,13 @@ class FusionEngine(Engine):
         TODO: restore and preserve the existing ones.
         """
         self.logger.debug("%s: Destroying...", self)
+
+        try:
+            self.close_windows()
+        except Exception as e:
+            self.logger.error(
+                f"Error closing windows: {e}, full traceback:\n{traceback.format_exc()}",
+            )
 
         # if self.get_setting("automatic_context_switch", True):
         #     fusion.setOnProjectCreatedCallback("")
@@ -588,14 +596,14 @@ class FusionEngine(Engine):
         :type record: :class:`~python.logging.LogRecord`
         """
         # Give a standard format to the message:
-        #     Shotgun <basename>: <message>
+        #     Shotgrid <basename>: <message>
         # where "basename" is the leaf part of the logging record name,
         # for example "tk-multi-shotgunpanel" or "qt_importer".
         if record.levelno < logging.INFO:
             formatter = logging.Formatter(
-                "Debug: Shotgun %(basename)s: %(message)s")
+                "Debug: Shotgrid %(basename)s: %(message)s")
         else:
-            formatter = logging.Formatter("Shotgun %(basename)s: %(message)s")
+            formatter = logging.Formatter("Shotgrid %(basename)s: %(message)s")
 
         msg = formatter.format(record)
 
@@ -619,12 +627,12 @@ class FusionEngine(Engine):
         engine.
         """
 
-        # Make a copy of the list of Tank dialogs that have been created by the
+        # Make a copy of the list of sgtk dialogs that have been created by the
         # engine and are still opened since the original list will be updated
         # when each dialog is closed.
         opened_dialog_list = self.created_qt_dialogs[:]
 
-        # Loop through the list of opened Tank dialogs.
+        # Loop through the list of opened sgtk dialogs.
         for dialog in opened_dialog_list:
             dialog_window_title = dialog.windowTitle()
             try:
@@ -670,7 +678,7 @@ class FusionEngine(Engine):
 
             # Validating metadata
             if sg_saver_bool:
-                template_name    = tool.GetData ("Current_template")
+                template_name    = tool.GetData("Current_template")
                 current_template = self.sgtk.templates[template_name]
             else: # Retro compatibility
                 current_template = self.sgtk.template_from_path(clip_path)

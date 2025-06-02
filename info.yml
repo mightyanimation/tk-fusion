@@ -1,12 +1,12 @@
-# Copyright (c) 2013 Shotgun Software Inc.
+# Copyright (c) 2013 Shotgrid Software Inc.
 #
 # CONFIDENTIAL AND PROPRIETARY
 #
-# This work is provided "AS IS" and subject to the Shotgun Pipeline Toolkit
+# This work is provided "AS IS" and subject to the Shotgrid Pipeline Toolkit
 # Source Code License included in this distribution package. See LICENSE.
 # By accessing, using, copying or modifying this work you indicate your
-# agreement to the Shotgun Pipeline Toolkit Source Code License. All rights
-# not expressly granted therein are reserved by Shotgun Software Inc.
+# agreement to the Shotgrid Pipeline Toolkit Source Code License. All rights
+# not expressly granted therein are reserved by Shotgrid Software Inc.
 
 # Metadata defining the behaviour and requirements for this engine
 
@@ -32,7 +32,7 @@ configuration:
                      value to the current major version + 1."
         default_value: 3
 
-    debug_logging: 
+    debug_logging:
         type: bool
         description: Controls whether debug messages should be emitted to the logger
         default_value: false
@@ -76,7 +76,7 @@ configuration:
 
     use_sgtk_as_menu_name:
         type: bool
-        description: Optionally choose to use 'Sgtk' as the primary menu name instead of 'Shotgun'
+        description: Optionally choose to use 'Sgtk' as the primary menu name instead of 'Shotgrid'
         default_value: false
 
     launch_builtin_plugins:
@@ -94,7 +94,7 @@ configuration:
         description: properties of saver nodes
         allows_empty: True
         default_value: []
-        values: 
+        values:
             type: dict
             items:
                 name: { type: str }
@@ -103,12 +103,12 @@ configuration:
                 render_template: { type: template }
                 work_template: { type: template }
 
-# the Shotgun fields that this engine needs in order to operate correctly
+# the Shotgrid fields that this engine needs in order to operate correctly
 requires_shotgun_fields:
-        
-# More verbose description of this item 
-display_name: "Shotgun Engine for Fusion"
-description: "Shotgun Integration in Fusion"
+
+# More verbose description of this item
+display_name: "Shotgrid Engine for Fusion"
+description: "Shotgrid Integration in Fusion"
 
 # Required minimum versions for this item to run
 requires_shotgun_version:
