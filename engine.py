@@ -314,7 +314,6 @@ class FusionEngine(Engine):
         if self.get_setting("use_sgtk_as_menu_name", False):
             self._menu_name = "Sgtk"
 
-
     def create_shotgun_menu(self, disabled=False):
         """
         Creates the main shotgun menu in fusion.
@@ -472,10 +471,11 @@ class FusionEngine(Engine):
         self.logger.debug("%s: Destroying...", self)
 
         try:
-            self.close_windows()
+            # self.close_windows()
+            self.menu_generator.deleteLater()
         except Exception as e:
             self.logger.error(
-                f"Error closing windows: {e}, full traceback:\n{traceback.format_exc()}",
+                f"Error closing menu: {e}, full traceback:\n{traceback.format_exc()}",
             )
 
         # if self.get_setting("automatic_context_switch", True):
