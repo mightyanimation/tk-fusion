@@ -28,7 +28,7 @@ class ShotgunMenu(QtGui.QWidget):
         super(ShotgunMenu, self).__init__()
         #self.setGeometry(50, 50, 260, 100)
         self.setMinimumWidth(250)
-        self.setWindowTitle("Shotgun: Menu Panel")
+        self.setWindowTitle("Shotgrid: Menu Panel")
         icon = QtGui.QIcon(self.icon_path)
         self.setWindowIcon(icon)
 
@@ -81,7 +81,6 @@ class ShotgunMenu(QtGui.QWidget):
         self.setWindowFlags(flags)
 
         self.populateLayout()
-
 
     def get_command_info(self, command_name):
         """
