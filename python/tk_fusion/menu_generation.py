@@ -168,7 +168,6 @@ class ShotgunMenu(QtGui.QWidget):
                 self.context_menu.addAction(menu_action)
 
             elif ctx_option in self.engine.commands:
-                self.context_menu.addSeparator()
                 # Creating menu button
                 menu_action = QtGui.QAction(ctx_option, self)
                 menu_action.setObjectName(ctx_option)
@@ -182,19 +181,25 @@ class ShotgunMenu(QtGui.QWidget):
                 if description_str: menu_action.setToolTip(description_str)
 
                 self.context_menu.addAction(menu_action)
-                self.context_menu.addSeparator()
 
             elif isinstance(ctx_option, int):
                 # Separators
                 for x in range(ctx_option): self.context_menu.addSeparator()
 
         # Populating menu with engine fuctions
+        counter = 0
         for cmd_name, cmd_data in self.engine.commands.items():
             eng_dict[id(cmd_data)] = cmd_data
             # Skip if the engine app/command  is already in the context menu
             if cmd_name in context_engine_options: continue
 
             # Create the button for the main menu
+            if counter % 4 == 0 and counter != 0:
+                line_sep = QtGui.QFrame()
+                line_sep.setFrameShape(QtGui.QFrame.HLine)
+                line_sep.setFrameShadow(QtGui.QFrame.Sunken)
+                self.qvboxLayout.addWidget(line_sep)
+            counter += 1
             app_button = QtGui.QPushButton('  {}'.format(cmd_name))
             app_button.setObjectName('{}'.format(cmd_name))
 
