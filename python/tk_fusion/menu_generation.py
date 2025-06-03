@@ -162,12 +162,13 @@ class ShotgunMenu(QtGui.QWidget):
 
         for ctx_option in context_engine_options:
             if isinstance(ctx_option, list):
-                #Creating menu button
+                # Creating menu button
                 menu_action = QtGui.QAction(ctx_option[0], self)
                 menu_action.triggered.connect(ctx_option[1])
                 self.context_menu.addAction(menu_action)
 
             elif ctx_option in self.engine.commands:
+                self.context_menu.addSeparator()
                 # Creating menu button
                 menu_action = QtGui.QAction(ctx_option, self)
                 menu_action.setObjectName(ctx_option)
@@ -181,6 +182,7 @@ class ShotgunMenu(QtGui.QWidget):
                 if description_str: menu_action.setToolTip(description_str)
 
                 self.context_menu.addAction(menu_action)
+                self.context_menu.addSeparator()
 
             elif isinstance(ctx_option, int):
                 # Separators
