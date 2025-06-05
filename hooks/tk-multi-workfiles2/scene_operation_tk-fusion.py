@@ -117,28 +117,40 @@ class SceneOperation(HookClass):
                 # self.update_fusion_saver_nodes(comp, work_fields)
                 self.update_fusion_saver_nodes(comp, file_path)
                 comp.Save(file_path)
-
                 engine.change_context(context)
 
         elif operation == "save_as":
             if file_path is not None:
                 # self.update_fusion_saver_nodes(comp, work_fields)
-                self.update_fusion_saver_nodes(comp, file_path)
-                comp.Save(file_path)
-
+                self.save_as(file_path)
                 engine.change_context(context)
 
         elif operation == "reset":
-            successfully_reset = self.reset(comp, context)
+            successfully_reset = self.reset(context)
 
             if successfully_reset:
                 engine.change_context(context)
 
             return successfully_reset
 
-    def reset(self, comp, context):
+    def save_as(self, file_path):
+        engine = self.parent.engine
+        logger = engine.logger
 
+        logger.info("About to run save_as from hook...")
         fusion = bmd.scriptapp("Fusion")
+        comp = fusion.GetCurrentComp()
+
+        self.update_fusion_saver_nodes(comp, file_path)
+        comp.Save(file_path)
+
+    def reset(self, context):
+        engine = self.parent.engine
+        logger = engine.logger
+
+        logger.info("About to run reset from hook...")
+        fusion = bmd.scriptapp("Fusion")
+        comp = fusion.GetCurrentComp()
 
         if comp:
             while not comp.GetAttrs()["COMPB_Locked"]:
@@ -149,9 +161,9 @@ class SceneOperation(HookClass):
         else:
             fusion.NewComp()
 
-        comp = fusion.GetCurrentComp()
-        self.fusion_setupScene(comp, context)
+        # self.fusion_setupScene(comp, context)
 
+        comp = fusion.GetCurrentComp()
         while comp.GetAttrs()["COMPB_Locked"]:
             comp.Unlock()
 
