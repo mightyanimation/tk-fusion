@@ -89,26 +89,12 @@ configuration:
         values:
             type: str
 
-    saver_nodes:
-        type: list
-        description: properties of saver nodes
-        allows_empty: True
-        default_value: []
-        values:
-            type: dict
-            items:
-                name: { type: str }
-                format_id: { type: str }
-                format_settings: { type: dict }
-                render_template: { type: template }
-                work_template: { type: template }
-
 # the Shotgrid fields that this engine needs in order to operate correctly
 requires_shotgun_fields:
 
 # More verbose description of this item
 display_name: "Shotgrid Engine for Fusion"
-description: "Shotgrid Integration in Fusion"
+description: "Shotgrid Integration for Fusion"
 
 # Required minimum versions for this item to run
 requires_shotgun_version:
