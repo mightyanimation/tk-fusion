@@ -101,12 +101,14 @@ class SceneOperation(HookClass):
 
         if operation == "current_path":
             return comp.GetAttrs()["COMPS_FileName"]
+
         elif operation == "open":
-            while not comp.GetAttrs()["COMPB_Locked"]:
-                comp.Lock()
             if comp:
-                comp.Close()
+                while not comp.GetAttrs()["COMPB_Locked"]:
+                    comp.Lock()
+                    comp.Close()
             comp = fusion.LoadComp(file_path)
+            comp = fusion.GetCurrentComp()
             while comp.GetAttrs()["COMPB_Locked"]:
                 comp.Unlock()
 
@@ -121,28 +123,32 @@ class SceneOperation(HookClass):
 
         elif operation == "save_as":
             if file_path is not None:
-                # self.update_fusion_saver_nodes(comp, work_fields)
-                self.save_as(file_path)
-                engine.change_context(context)
+                self.save_as(file_path, context)
+                # engine.change_context(context)
 
         elif operation == "reset":
             successfully_reset = self.reset(context)
 
-            if successfully_reset:
-                engine.change_context(context)
+            # if successfully_reset:
+            #     engine.change_context(context)
 
             return successfully_reset
 
-    def save_as(self, file_path):
+    def save_as(self, file_path, context):
         engine = self.parent.engine
+        if not context:
+            context = engine.context
         logger = engine.logger
 
         logger.info("About to run save_as from hook...")
         fusion = bmd.scriptapp("Fusion")
         comp = fusion.GetCurrentComp()
 
-        self.update_fusion_saver_nodes(comp, file_path)
+        engine.change_context(context)
         comp.Save(file_path)
+
+        self.update_fusion_saver_nodes(comp, file_path)
+
 
     def reset(self, context):
         engine = self.parent.engine
@@ -152,20 +158,27 @@ class SceneOperation(HookClass):
         fusion = bmd.scriptapp("Fusion")
         comp = fusion.GetCurrentComp()
 
-        if comp:
-            while not comp.GetAttrs()["COMPB_Locked"]:
-                comp.Lock()
+        try:
+            if comp:
+                while not comp.GetAttrs()["COMPB_Locked"]:
+                    comp.Lock()
 
-            comp.Close()
-            fusion.NewComp()
-        else:
-            fusion.NewComp()
+                comp.Close()
+                fusion.NewComp()
+            else:
+                fusion.NewComp()
 
-        # self.fusion_setupScene(comp, context)
+            # self.fusion_setupScene(comp, context)
 
-        comp = fusion.GetCurrentComp()
-        while comp.GetAttrs()["COMPB_Locked"]:
-            comp.Unlock()
+            comp = fusion.GetCurrentComp()
+            while comp.GetAttrs()["COMPB_Locked"]:
+                comp.Unlock()
+
+            engine.change_context(context)
+
+        except Exception as e:
+            logger.error("Error creating a new scene: {}".format(e))
+            return False
 
         return True
 
