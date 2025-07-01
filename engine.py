@@ -15,6 +15,7 @@ https://en.wikipedia.org/wiki/Fusion_(software)
 import os
 import sys
 import time
+import pprint
 import inspect
 import logging
 import traceback
@@ -32,6 +33,9 @@ fusion = bmd.scriptapp("Fusion")
 __author__ = "Diego Garcia Huerta"
 __email__ = "diegogh2000@gmail.com"
 
+
+pp = pprint.pprint
+pf = pprint.pformat
 
 # env variable that control if to show the compatibility warning dialog
 # when Fusion software version is above the tested one.
@@ -214,8 +218,8 @@ class FusionEngine(Engine):
     def _restore_cacert_file(self):
         if self.ssl_cert_file is None:
             del os.environ["SSL_CERT_FILE"]
-        else:
-            os.environ["SSL_CERT_FILE"] = ssl_cert_file
+        # else:
+        #     os.environ["SSL_CERT_FILE"] = ssl_cert_file
 
     def pre_app_init(self):
         """
@@ -311,7 +315,34 @@ class FusionEngine(Engine):
         if self.get_setting("use_sgtk_as_menu_name", False):
             self._menu_name = "Sgtk"
 
-    def create_shotgun_menu(self, disabled=False):
+    @staticmethod
+    def __recreate_shotgrid_menu():
+        """
+        Recreate the Shotgun menu in the current Fusion session.
+
+        This method is useful in case the menu has been destroyed
+        (for example if the user has manually deleted the menu in the
+        Fusion UI).
+
+        No arguments are required and no return value is expected.
+
+        Note: if the sgtk module is not available, this method will
+        not do anything and will not raise an error.
+
+        Used in the Shotgrid menu entry in the Fusion UI.
+        """
+        if "sgtk" not in sys.modules:
+            try:
+                import sgtk
+            except ImportError as e:
+                display_error(f"Could not import sgtk: {e}")
+                display_error(traceback.format_exc())
+                return
+
+        engine = sgtk.platform.current_engine()
+        return engine.create_shotgrid_menu()
+
+    def create_shotgrid_menu(self, disabled=False):
         """
         Creates the main shotgun menu in fusion.
         Note that this only creates the menu, not the child actions
@@ -362,7 +393,7 @@ class FusionEngine(Engine):
         self._run_app_instance_commands()
 
         # create the floating menu
-        self.create_shotgun_menu()
+        self.create_shotgrid_menu()
 
         # self._qt_app.exec_()
 
@@ -394,7 +425,7 @@ class FusionEngine(Engine):
 
             # finally create the menu with the new context if needed
             if old_context != new_context:
-                self.create_shotgun_menu()
+                self.create_shotgrid_menu()
 
     def _run_app_instance_commands(self):
         """
@@ -645,59 +676,177 @@ class FusionEngine(Engine):
                     )
                 )
 
+    # def launch_floating_widget(self):
+    #     if not hasattr(self, '_floating_widget'):
+    #         self._floating_widget = ShotgunMenu(self)  # assuming ShotgunMenu is the class for the floating QWidget
+    #     self._floating_widget.show()
+
+    # def create_menu(self):
+    #     menu = fusion.Menu("Shotgrid Toolkit")
+    #     action = menu.AddAction("Launch Floating Widget", self.launch_floating_widget)
+    #     return menu
+
+    ####################################################################################
+    # DO NOT DELETE: Method used by the publisher to update the version of the saver
+    # nodes
+    ####################################################################################
     def __update_nodes_version(self, new_path=None):
         """
             Update all the saver nodes in the comp.
             Only if the path correspond to a template.
         """
+        self.logger.info("Updating saver nodes version...".ljust(80, "-"))
         comp          = fusion.GetCurrentComp()
         work_path     = comp.GetAttrs()['COMPS_FileName']
-        if new_path is not None:
+        if not new_path:
             work_path = new_path
-        work_tmpl     = self.sgtk.template_from_path(work_path)
-        if work_tmpl is None:
-            print("__update_nodes_version: Invalid path")
+        work_template     = self.sgtk.template_from_path(work_path)
+        if not work_template:
+            self.logger.error(
+                f"Couldn't get a fusion work template from work path: {work_path}"
+            )
             return
-        work_fields   = work_tmpl.get_fields(work_path)
-        list_of_tools = comp.GetToolList(False, "Saver") # Only selected:False
+        work_fields   = work_template.get_fields(work_path)
 
-        for index, tool in list_of_tools.items ():
+        while not comp.GetAttrs()["COMPB_Locked"]:
+            comp.Lock()
+
+        # by using False as first argument, we are collecting all of the saver nodes,
+        # not just the selected ones
+        dict_of_tools = comp.GetToolList(False, "Saver")
+
+        # Ensure the collected saver nodes have the newer metadata key
+        # "Shotgrid_Saver_Node" and not just the old one "Shotgun_Saver_Node"
+        self.__update_saver_metadata(dict_of_tools)
+
+        invalid_paths = {
+            "empty": [],
+            "no_matching_template": [],
+            "no_version_token": [],
+            "missing_keys": [],
+        }
+
+        for index, tool in dict_of_tools.items():
+            self.logger.info(f"Working on saver: {tool.Name}".ljust(40, "-"))
             clip_path = tool.GetAttrs()['TOOLST_Clip_Name'].values()[0]
 
-            # If saver is empty
+            # If saver path is empty
             if clip_path in [None, "", " "]:
+                self.logger.warning(
+                    f"Saver '{tool.Name}' has an invalid path, skipping: {clip_path}"
+                )
+                invalid_paths["empty"].append({tool.Name: clip_path})
                 continue
 
-            sg_saver_bool    = tool.GetData("Shotgun_Saver_Node")
+            is_sg_saver    = tool.GetData("Shotgrid_Saver_Node")
             fields           = None
             current_template = None
             new_render_path  = None
 
             # Validating metadata
-            if sg_saver_bool:
+            if is_sg_saver:
                 template_name    = tool.GetData("Current_template")
                 current_template = self.sgtk.templates[template_name]
-            else: # Retro compatibility
+            # If the user created the saver manually, we might be able to still get the
+            # template from the node path, if it matches with one of the valid templates
+            else:
                 current_template = self.sgtk.template_from_path(clip_path)
 
             # Avoid savers out of the pipeline
-            if current_template is None:
+            if not current_template:
+                self.logger.warning(
+                    (
+                        f"Saver '{tool.Name}' has an invalid path that doesn't match "
+                        f"any template, skipping: {clip_path}"
+                    )
+                )
+                invalid_paths["no_matching_template"].append({tool.Name: clip_path})
                 continue
 
             fields = current_template.get_fields(clip_path)
 
             # Checking if the template use a version token
             if not 'version' in fields.keys():
+                self.logger.warning(
+                    (
+                        f"Saver '{tool.Name}' doesn't use a version token, skipping: "
+                        f"{clip_path}\n"
+                        f"Available fields for this path:\n{pf(fields)}"
+                    )
+                )
+                invalid_paths["no_version_token"].append({tool.Name: clip_path})
                 continue
 
             for tool_field in fields.keys():
                 # Update the fields
                 if tool_field in work_fields.keys():
-                    fields[tool_field]=work_fields[tool_field]
+                    fields[tool_field] = work_fields[tool_field]
+
+            # Checking for missing keys
+            missing_keys = current_template.missing_keys(fields)
+            if missing_keys:
+                self.logger.warning(
+                    (
+                        f"Saver '{tool.Name}' has missing keys, skipping: "
+                        f"{clip_path}\n"
+                        f"Missing keys:\n{pf(missing_keys)}"
+                    )
+                )
+                invalid_paths["missing_keys"].append({tool.Name: clip_path})
+                continue
 
             # Updating path from current saver
-            new_render_path  = current_template.apply_fields(fields)
-            tool.Clip        = new_render_path
+            new_render_path = current_template.apply_fields(fields)
+            self.logger.info(
+                f"Updating saver '{tool.Name}' path from {clip_path} to {new_render_path}"
+            )
+            tool.Clip = new_render_path
 
         comp.Save(work_path)
-        print('Nodes update complete')
+
+        while comp.GetAttrs()["COMPB_Locked"]:
+            comp.Unlock()
+
+        if any(invalid_paths.values()):
+            self.logger.warning(
+                f"The following savers couldn't be updated:\n{pf(invalid_paths)}"
+            )
+        self.logger.info('Nodes update complete')
+
+    def __update_saver_metadata(self, all_savers={}):
+        """
+        Updates the saver nodes metadata to the new "Shotgrid_Saver_Node" key.
+
+        This method is used to update the saver nodes metadata from the old
+        "Shotgun_Saver_Node" key to the new "Shotgrid_Saver_Node" key. Old keys is kept
+        for backwards compatibility.
+
+        It iterates over all saver nodes in the composition, checks if the saver node
+        has the old key, and if it does, updates it to the new key.
+        """
+        comp = fusion.GetCurrentComp()
+
+        if not all_savers:
+            all_savers = comp.GetToolList(False, "Saver")
+
+        while not comp.GetAttrs()["COMPB_Locked"]:
+            comp.Lock()
+
+        for i, saver in all_savers.items():
+            self.logger.info(f"Working on saver {i}: {saver.Name}".ljust(60, "."))
+            is_sg_saver_old = saver.GetData("Shotgun_Saver_Node")
+            is_sg_saver_new = saver.GetData("Shotgrid_Saver_Node")
+
+            if is_sg_saver_old:
+                if is_sg_saver_new is not None:
+                    saver.SetData("Shotgrid_Saver_Node", is_sg_saver_old)
+                    self.logger.info("Updated Shotgrid saver node.")
+                else:
+                    self.logger.info("Shotgrid saver node already updated.")
+            else:
+                self.logger.warning("Saver is not a fusion saver, skipping...")
+
+        comp.Save()
+
+        while comp.GetAttrs()["COMPB_Locked"]:
+            comp.Unlock()
