@@ -291,7 +291,18 @@ class FusionActions(HookBaseClass):
             loader.ClipTimeEnd = trim_out
             loader.TrimOut = trim_out
 
-        metadata_ = {}
+        fields = {}
+        publish_template = self.parent.engine.sgtk.template_from_path(path)
+        if publish_template:
+            fields = publish_template.get_fields(path)
+
+        buffer = fields.get("buffer", "")
+        if buffer:
+            loader.SetData("sg_buffer", buffer)
+            metadata_ = {"buffer": buffer}
+        else:
+            metadata_ = {}
+
         meta_keys = ["version_number", "code", "name", "id", "entity"]
         if sg_publish_data is not None:
             for k, val in sg_publish_data.items():

@@ -244,7 +244,8 @@ class FusionSessionPublishPlugin(HookBaseClass):
                 )
             else:
                 self.logger.debug(
-                    "Work template configured and matches session file.")
+                    "Work template configured and matches session file."
+                )
         else:
             self.logger.debug("No work template configured.")
 
@@ -260,7 +261,8 @@ class FusionSessionPublishPlugin(HookBaseClass):
             # the next one until we get one that doesn't exist.
             while os.path.exists(next_version_path):
                 (next_version_path, version) = self._get_next_version_info(
-                    next_version_path, item)
+                    next_version_path, item
+                )
 
             error_msg = "The next version of this file already exists on disk."
             self.logger.error(
@@ -281,7 +283,8 @@ class FusionSessionPublishPlugin(HookBaseClass):
         # populate the publish template on the item if found
         publish_template_setting = settings.get("Publish Template")
         publish_template = publisher.engine.get_template_by_name(
-            publish_template_setting.value)
+            publish_template_setting.value
+        )
         if publish_template:
             item.properties["publish_template"] = publish_template
 
@@ -323,8 +326,10 @@ class FusionSessionPublishPlugin(HookBaseClass):
             httplib2_dir = os.path.dirname(httplib2_file)
             cacerts_file = os.path.join(httplib2_dir, "cacerts.txt")
             os.environ["SSL_CERT_FILE"] = cacerts_file
-        except ImportError:
-            pass
+        except ImportError as e:
+            self.parent.engine.logger.exception(
+                f"Failed to set SSL_CERT_FILE env var: {e}"
+            )
 
         # let the base class register the publish
         super(FusionSessionPublishPlugin, self).publish(settings, item)
