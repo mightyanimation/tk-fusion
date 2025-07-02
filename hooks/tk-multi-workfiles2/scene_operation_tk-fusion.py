@@ -308,7 +308,7 @@ class SceneOperation(HookClass):
     def update_fusion_saver_nodes(self, file_path):
         self.parent.logger.info("Updating saver nodes...".ljust(100, "-"))
 
-        self.parent.engine._FusionEngine__update_nodes_version()
+        self.parent.engine._FusionEngine__update_nodes_version(file_path)
 
         # comp = fusion.GetCurrentComp()
         # try:
