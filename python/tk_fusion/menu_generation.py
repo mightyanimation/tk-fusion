@@ -20,6 +20,7 @@ class ShotgunMenu(QtGui.QWidget):
     def __init__(self, engine, icon_path):
         self.engine = engine
         self.icon_path = icon_path
+        self.logger = self.engine.logger
 
         # Verify fusion
         self.verify_fusion()
@@ -230,17 +231,29 @@ class ShotgunMenu(QtGui.QWidget):
         QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
 
     def unlock_comp(self):
+        self.logger.info('Unlocking comp action started...'.ljust(80, '-'))
         fusion = bmd.scriptapp("Fusion")
         comp = fusion.GetCurrentComp()
-        was_locked_bool = False
+        # was_locked_bool = False
+
+        # force comp lock
+        self.logger.info('Locking comp...')
+        comp.Lock()
+
+        # then unlock it through a while loop to ensure it is unlocked
+        self.logger.info('Unlocking comp...')
         while comp.GetAttrs()['COMPB_Locked']:
-            was_locked_bool = True
+            # was_locked_bool = True
             comp.Unlock()
 
-        if was_locked_bool:
-            msg_ = 'Unlock complete'
-        else:
-            msg_ = 'Comp was not locked'
+        self.logger.info('Unlock complete')
+
+        # if was_locked_bool:
+        #     msg_ = 'Unlock complete'
+        # else:
+        #     msg_ = 'Comp was not locked'
+
+        msg_ = 'Unlock complete'
 
         msgBox = QtGui.QMessageBox()
         msgBox.setText(msg_)
