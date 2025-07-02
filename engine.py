@@ -714,6 +714,7 @@ class FusionEngine(Engine):
         # by using False as first argument, we are collecting all of the saver nodes,
         # not just the selected ones
         dict_of_tools = comp.GetToolList(False, "Saver")
+        self.logger.info(f"dict_of_tools:\n{(pf(dict_of_tools))}")
 
         # Ensure the collected saver nodes have the newer metadata key
         # "Shotgrid_Saver_Node" and not just the old one "Shotgun_Saver_Node"
@@ -728,13 +729,25 @@ class FusionEngine(Engine):
 
         for index, tool in dict_of_tools.items():
             self.logger.info(f"Working on saver: {tool.Name}".ljust(40, "-"))
-            clip_path = tool.GetAttrs()['TOOLST_Clip_Name'].values()[0]
+            paths = list(tool.GetAttrs()['TOOLST_Clip_Name'].values())
+
+            if paths:
+                clip_path = paths[0]
+            else:
+                clip_path = None
 
             # If saver path is empty
             if clip_path in [None, "", " "]:
                 self.logger.warning(
                     f"Saver '{tool.Name}' has an invalid path, skipping: {clip_path}"
                 )
+
+                try:
+                    tool.SetAttrs({"TOOLB_PassThrough": True})
+                    self.logger.info(f"Saver '{tool.Name}' has bneen disabled.")
+                except Exception as e:
+                    self.logger.exception(f"Failed to disable saver '{tool.Name}': {e}")
+
                 invalid_paths["empty"].append({tool.Name: clip_path})
                 continue
 
