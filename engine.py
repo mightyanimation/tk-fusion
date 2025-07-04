@@ -813,6 +813,7 @@ class FusionEngine(Engine):
             self.logger.info(
                 f"Updating saver '{tool.Name}' path from {clip_path} to {new_render_path}"
             )
+            os.makedirs(os.path.dirname(new_render_path), exist_ok=True)
             tool.Clip = new_render_path
 
         comp.Save(work_path)
