@@ -381,7 +381,11 @@ class FusionActions(HookBaseClass):
         max_x = None
         max_y = None
 
-        for tool in comp.GetToolList(False).values():
+        all_tools = comp.GetToolList(False).values()
+        if not list(all_tools):
+            return 0, 0
+
+        for tool in all_tools:
             pos = flow.GetPosTable(tool)
             if not pos:
                 continue
