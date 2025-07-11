@@ -690,22 +690,32 @@ class FusionEngine(Engine):
     # DO NOT DELETE: Method used by the publisher to update the version of the saver
     # nodes
     ####################################################################################
-    def __update_nodes_version(self, new_path=None):
+    def __update_nodes_version(self, work_path=None):
         """
             Update all the saver nodes in the comp.
             Only if the path correspond to a template.
         """
+        result = {
+            "errors": [],
+        }
         self.logger.info("Updating saver nodes version...".ljust(80, "-"))
-        comp          = fusion.GetCurrentComp()
-        work_path     = comp.GetAttrs()['COMPS_FileName']
-        if not new_path:
-            work_path = new_path
-        work_template     = self.sgtk.template_from_path(work_path)
+        comp = fusion.GetCurrentComp()
+        if not work_path:
+            work_path = comp.GetAttrs()['COMPS_FileName']
+
+        if not work_path:
+            error = "Couldn't get work path from comp or from args"
+            result["errors"].append(error)
+            self.logger.error(error)
+            return result
+
+        work_template = self.sgtk.template_from_path(work_path)
         if not work_template:
-            self.logger.error(
-                f"Couldn't get a fusion work template from work path: {work_path}"
-            )
-            return
+            error = f"Couldn't get a fusion work template from work path: {work_path}"
+            result["errors"].append(error)
+            self.logger.error(error)
+            return result
+
         work_fields   = work_template.get_fields(work_path)
 
         while not comp.GetAttrs()["COMPB_Locked"]:
@@ -751,14 +761,14 @@ class FusionEngine(Engine):
                 invalid_paths["empty"].append({tool.Name: clip_path})
                 continue
 
-            is_sg_saver    = tool.GetData("Shotgrid_Saver_Node")
-            fields           = None
+            is_sg_saver = tool.GetData("Shotgrid_Saver_Node")
+            fields = None
             current_template = None
-            new_render_path  = None
+            new_render_path = None
 
             # Validating metadata
             if is_sg_saver:
-                template_name    = tool.GetData("Current_template")
+                template_name = tool.GetData("Current_template")
                 current_template = self.sgtk.templates[template_name]
             # If the user created the saver manually, we might be able to still get the
             # template from the node path, if it matches with one of the valid templates
@@ -822,10 +832,12 @@ class FusionEngine(Engine):
             comp.Unlock()
 
         if any(invalid_paths.values()):
-            self.logger.warning(
-                f"The following savers couldn't be updated:\n{pf(invalid_paths)}"
-            )
+            warning = f"The following savers couldn't be updated:\n{pf(invalid_paths)}"
+            self.logger.warning(warning)
+            result["errors"].append(warning)
         self.logger.info('Nodes update complete')
+
+        return result
 
     def __update_saver_metadata(self, all_savers={}):
         """
