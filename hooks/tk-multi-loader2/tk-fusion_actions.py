@@ -261,13 +261,19 @@ class FusionActions(HookBaseClass):
             logger.error(msg)
             raise Exception(msg)
 
-        # find the sequence range if it has one:
-        seq_range = self._find_sequence_range(path)
+        # find the sequence range if it has one and if it's a sequence:
+        if ext not in [".mov", ".mp4"]:
+            seq_range = self._find_sequence_range(path)
+        else:
+            seq_range = None
 
         while not comp.GetAttrs()["COMPB_Locked"]:
             comp.Lock()
 
-        path = path % seq_range[0]
+        # only get the first frame in the sequences range if it's actually a sequence
+        if seq_range:
+            path = path % seq_range[0]
+
         path = self.fix_path(path)
         node_name = os.path.basename(path).split(".")[0]
         load_data = {
