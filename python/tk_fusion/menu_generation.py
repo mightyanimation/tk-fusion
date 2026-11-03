@@ -10,6 +10,11 @@ import subprocess
 import BlackmagicFusion as bmd
 from sgtk.platform.qt import QtGui, QtCore
 
+try:
+    from sgtk_utility_functions import get_bundle_window_icon
+except ImportError:
+    get_bundle_window_icon = None
+
 pp = pprint.pprint
 pf = pprint.pformat
 
@@ -256,6 +261,7 @@ class ShotgunMenu(QtGui.QWidget):
         msg_ = 'Unlock complete'
 
         msgBox = QtGui.QMessageBox()
+        set_message_box_window_icon(msgBox, self.engine)
         msgBox.setText(msg_)
         msgBox.exec_()
 
@@ -322,3 +328,22 @@ class ShotgunMenu(QtGui.QWidget):
 
         fusion = bmd.scriptapp("Fusion") # Reload fusion
         comp = fusion.GetCurrentComp() # Reload comp
+
+
+def set_message_box_window_icon(msg_box, bundle=None):
+    """
+    Sets the window icon of a message box to the icon of the given bundle.
+
+    Nothing happens when the icon cannot be resolved, for example on
+    engines without Qt support or when no toolkit bundle is running,
+    so message box code degrades gracefully instead of raising.
+    """
+
+    try:
+        if get_bundle_window_icon is None:
+            return
+        window_icon = get_bundle_window_icon(bundle)
+        if window_icon:
+            msg_box.setWindowIcon(window_icon)
+    except Exception:
+        pass
